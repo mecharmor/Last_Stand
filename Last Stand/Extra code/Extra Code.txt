@@ -1,0 +1,53 @@
+
+    Private Sub frmGame_MouseClick(sender As Object, e As MouseEventArgs) Handles Me.MouseClick
+
+        'MsgBox(MousePosition.X)
+
+        'Check for press
+        'If intMode = 0 Then
+        '    If MousePosition.X >= 1100 And MousePosition.X <= 1350 And MousePosition.Y >= 50 And MousePosition.Y <= 80 Then
+        '        MsgBox("CLICKED")
+        '    End If
+        'End If
+
+    End Sub
+
+    'Private Sub Draw(strImageDirectory As String, intOriginalWidth As Integer, intOriginalHeight As Integer, intX As Integer, intY As Integer,
+    '                 intStretchX As Integer, intStretchY As Integer)
+
+    '    'Draw
+    '    Dim btmBitmap As New Bitmap(Image.FromFile(strImageDirectory), intOriginalWidth, intOriginalHeight) 'Original size
+    '    Dim gGraphics As Graphics = Me.CreateGraphics() 'This is setting the form as the object to paint on, hence ME
+    '    gGraphics.DrawImage(btmBitmap, New Rectangle(intX, intY, intStretchX, intStretchY))
+    '    'Dispose objects
+    '    btmBitmap.Dispose()
+    '    gGraphics.Dispose()
+
+    'End Sub
+
+        'Me.SetStyle(System.Windows.Forms.ControlStyles.AllPaintingInWmPaint, True) ' True is better
+        'Me.SetStyle(System.Windows.Forms.ControlStyles.OptimizedDoubleBuffer, True) ' True is better
+        '' Disable the on built PAINT event. We dont need it with a renderloop.
+        '' The form will no longer refresh itself
+        '' we will raise the paint event ourselves from our renderloop.
+        'Me.SetStyle(System.Windows.Forms.ControlStyles.UserPaint, False) ' False is better
+
+
+        'Background
+        'Dim btmBitmap As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Menu.jpg"), intScreenWidth, intScreenHeight) 'Full screen
+        'Me.BackgroundImage = btmBitmap 'Dipose later
+
+
+
+
+
+
+
+
+
+        'Draw(AppDomain.CurrentDomain.BaseDirectory & "Images/Start.png", 250, 80, 1100, 50, 250, 80)
+
+        'Dim myImage2 As Bitmap = CType(Bitmap.FromFile("E:\Project Work VBnet\WindowsApplication5\WindowsApplication5\bin\Debug\Artwork\Decks\DeckBlueWater.gif"), Bitmap)
+        'Dim r2 As New Rectangle(100, 100, 400, 400)
+        'Dim ef As Graphics = Me.CreateGraphics()
+        'ef.DrawImage(myImage2, r2)

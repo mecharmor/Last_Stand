@@ -1,0 +1,11 @@
+E:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.exe.config
+K:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.exe.config
+K:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.exe
+K:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.pdb
+K:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.xml
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.frmGame.resources
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.Resources.resources
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.vbproj.GenerateResource.Cache
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.exe
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.xml
+K:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.pdb
