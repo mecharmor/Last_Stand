@@ -51,3 +51,22 @@
         'Dim r2 As New Rectangle(100, 100, 400, 400)
         'Dim ef As Graphics = Me.CreateGraphics()
         'ef.DrawImage(myImage2, r2)
+
+
+
+
+    'Constants
+    Public Const WINDOW_TITLE_BAR_DOUBLE_CLICKED As Integer = &HA3
+
+    'Do not allow a resize of the window, this happens if you double click the title, but is prevented with this sub
+    Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
+
+        'If a double click on the title bar is triggered
+        If m.Msg = WINDOW_TITLE_BAR_DOUBLE_CLICKED Then
+            Return
+        End If
+
+        'Still send message but without resizing
+        MyBase.WndProc(m)
+
+    End Sub

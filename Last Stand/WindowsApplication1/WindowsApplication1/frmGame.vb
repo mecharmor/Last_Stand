@@ -5,142 +5,165 @@ Option Infer Off
 
 Public Class frmGame
 
-    'Notes: Original menu pixel size is 1920x1200px
-
-    'Shadows Event Paint(ByVal g As Graphics)
-
-    'Declare main
+    'Screen
     Private intScreenWidth As Integer = 0
     Private intScreenHeight As Integer = 0
-    Private picMenu As PictureBox
-    Private picStart As PictureBox
-    Private picBackground As PictureBox
-    Private picZombie As PictureBox
-    Private thrZombie As System.Threading.Thread
-    Private intWalkingCounter As Integer = 0
-    Private blnZombieSwitch As Boolean = False
+    Private dblScreenWidthRatio As Double = 0
+    Private dblScreenHeightRatio As Double = 0
 
-    Private Sub frmGame_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    'Menu
+    Private btmMenu As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Menu.jpg"), 1920, 1200)
+    Private rectMenu As Rectangle
 
-        'Screen
-        intScreenWidth = Me.Width '1696
-        intScreenHeight = Me.Height '1066
+    'Start
+    Private btmStart As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Start.png"), 209, 66)
+    Private rectStart As Rectangle
 
-        'Add picture box menu
-        picMenu = New PictureBox()
-        Dim btmMenu As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Menu.jpg"), intScreenWidth, intScreenHeight)
-        picMenu.Image = btmMenu
-        picMenu.Width = intScreenWidth
-        picMenu.Height = intScreenHeight
-        picMenu.Left = 0
-        picMenu.Top = 0
-        Controls.Add(picMenu)
+    'Graphics
+    Private gGraphics As Graphics
+    Private thrRendering As System.Threading.Thread
+    Private blnThreadSupported As Boolean = False
 
-        'Add picture box start
-        picStart = New PictureBox()
-        picStart.Visible = False
-        Dim btmStart As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Start.png"), 250, 80)
-        picStart.Image = btmStart
-        picStart.Width = 250
-        picStart.Height = 80
-        picStart.Left = 1100
-        picStart.Top = 50
-        Controls.Add(picStart)
-        picStart.BringToFront()
-        picStart.BackColor = Color.Transparent
-        picStart.Parent = picMenu
-        picStart.Visible = True
+    'Constants
+    Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
+    Private Const CONTROL_MOVE As Integer = 61456
+    Private Const WINDOWMESSAGE_CLICK_BUTTONDOWN As Integer = 161
+    Private Const WINDOWCAPTION As Integer = 2
+    Private Const WINDOWMESSAGE_TITLE_BAR_DOUBLE_CLICKED As Integer = &HA3
 
-        'Add event
-        AddHandler picStart.Click, AddressOf picStart_Click
+    Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
+
+        'Notes:'Do not allow a resize of the window, this happens if you double click the title, but is prevented with this sub, prevents moving the window around too
+
+        'Prevent moving the form by control box click
+        If (m.Msg = WINDOWMESSAGE_SYSTEM_COMMAND) And (m.WParam.ToInt32() = CONTROL_MOVE) Then
+            Return
+        End If
+
+        'Prevent button down moving form
+        If (m.Msg = WINDOWMESSAGE_CLICK_BUTTONDOWN) And (m.WParam.ToInt32() = WINDOWCAPTION) Then
+            Return
+        End If
+
+        'If a double click on the title bar is triggered
+        If m.Msg = WINDOWMESSAGE_TITLE_BAR_DOUBLE_CLICKED Then
+            Return
+        End If
+
+        'Still send message but without resizing
+        MyBase.WndProc(m)
+
+    End Sub
+
+    Private Sub frmGame_Load(sender As Object, e As EventArgs) Handles Me.Load
+
+        'Check if multi-threading was possible
+        If Not blnThreadSupported Then
+
+            'Exit
+            Me.Close()
+
+        Else
+
+            'Screen
+            intScreenWidth = Me.Width '1696
+            intScreenHeight = Me.Height '1066
+
+            'Current screen ratio
+            dblScreenWidthRatio = CDbl(intScreenWidth) / 1920
+            dblScreenHeightRatio = CDbl(intScreenHeight) / 1200
+
+            'Set rectangles
+            rectMenu = New Rectangle(0, 0, intScreenWidth, intScreenHeight)
+            rectStart = New Rectangle(1250, 50, 209, 66)
+
+            'Trying something
+            gGraphics = Graphics.FromImage(btmMenu)
+            gGraphics.DrawImage(btmStart, rectStart)
+
+            'Set graphics
+            gGraphics = Me.CreateGraphics() 'Prepare to draw to the form
+
+            'Start rendering
+            thrRendering.Start()
+
+        End If
 
     End Sub
 
     Private Sub frmGame_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
 
-        'Stop thread
-        If thrZombie.IsAlive Then
-            thrZombie.Abort()
+        'Render thread needs to be aborted
+        If thrRendering.IsAlive Then
+            thrRendering.Abort()
         End If
 
     End Sub
 
-    Private Sub picStart_Click(sender As Object, e As EventArgs)
+    Sub New()
 
-        'Remove event
-        RemoveHandler picStart.Click, AddressOf picStart_Click
+        ' This call is required by the designer
+        InitializeComponent() 'Do not remove
 
-        'Add picture box background
-        picBackground = New PictureBox()
-        Dim btmBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), intScreenWidth, intScreenHeight)
-        picBackground.Image = btmBackground
-        picBackground.Width = intScreenWidth
-        picBackground.Height = intScreenHeight
-        picBackground.Left = 0
-        picBackground.Top = 0
-        Controls.Add(picBackground)
+        'Prepare rendering thread
+        thrRendering = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Rendering))
 
-        'Start a zombie on the right
-        picZombie = New PictureBox()
-        Dim btmZombie As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/1.png"), 1500, 1500)
-        picZombie.Image = btmZombie
-        picZombie.Width = 1500
-        picZombie.Height = 1500
-        picZombie.Left = Me.Width + 100
-        picZombie.Top = -100
-        Controls.Add(picZombie)
-        picZombie.BringToFront()
-        picZombie.BackColor = Color.Transparent
-        picZombie.Parent = picBackground
+        'Check for multi-threading first
+        If Not thrRendering.TrySetApartmentState(Threading.ApartmentState.MTA) Then
 
-        Me.SetStyle(ControlStyles.OptimizedDoubleBuffer Or ControlStyles.UserPaint Or ControlStyles.AllPaintingInWmPaint, True)
+            'Display
+            MessageBox.Show("This computer doesn't support multi-threading. This application will close now.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
 
-        'Start a moving thread, this is sort of like a timer but we are using a thread from our CPU
-        thrZombie = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf ZombieWalking))
-        thrZombie.Start()
+        Else
 
-        'Remove the previous picture boxes
-        picMenu.Dispose()
-        picMenu = Nothing
-        picStart.Dispose()
-        picStart = Nothing
+            'Set, multi-threading is possible
+            blnThreadSupported = True
+
+            'Stop the paint event, we will do the painting when we want to
+            MyBase.SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
+            MyBase.SetStyle(ControlStyles.AllPaintingInWmPaint, True)
+            MyBase.SetStyle(ControlStyles.UserPaint, False)
+
+            'Lock down the window size
+            Me.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
+
+        End If
 
     End Sub
 
-    Private Sub ZombieWalking()
+    Private Sub Rendering()
 
-        'Notes: http://www.vbdotnetforums.com/gui/15271-picture-box-refresh-problem.html
-        '       http://www.codeproject.com/Articles/409988/Beginners-Starting-a-D-Game-with-GDIplus
-        '       The refresh problem with the picture box is normal, this happens. Above links talk about not using picture boxes. I guess we have to figure out GDI+.
-        '       Zombie frames = 1, 2, 3, 4, 3, 2, 1, 2, 3, 4
-
-        'Keep moving
+        'Loop
         While True
-            'Reduce CPU usage, or lag the zombie on purpose
-            System.Threading.Thread.Sleep(15) 'Speed of miliseconds in sleeping, waiting
-            Debug.Print(CStr(intWalkingCounter))
-            'Set and increase
-            If Not blnZombieSwitch Then
-                If intWalkingCounter = 4 Then
-                    blnZombieSwitch = True
-                    intWalkingCounter -= 1
-                Else
-                    intWalkingCounter += 1
-                End If
-            Else
-                If intWalkingCounter = 1 Then
-                    blnZombieSwitch = False
-                    intWalkingCounter += 1
-                Else
-                    intWalkingCounter -= 1
-                End If
-            End If
-            'Image swap
-            Dim btmZombie As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/" & CStr(intWalkingCounter) & ".png"), 1500, 1500)
-            picZombie.Invoke(Sub() picZombie.Image = btmZombie) 'Controls must invoke first before doing what you want, this is inside a thread
-            'Move zombie
-            picZombie.Invoke(Sub() picZombie.Left -= 35) 'Controls must invoke first before doing what you want, this is inside a thread
+            'Draw menu
+            gGraphics.DrawImage(btmMenu, rectMenu)
+            'Reduce CPU usage
+            System.Threading.Thread.Sleep(60) '60 ms passes before a frame
         End While
+
+    End Sub
+
+    Private Sub frmGame_Click(sender As Object, e As EventArgs) Handles Me.Click
+
+        'Start has been clicked
+        If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
+        MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
+        MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+            MsgBox("Start was triggered")
+        End If
+
+    End Sub
+
+    Private Sub frmGame_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
+
+        'Start has been moused over
+        If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
+        MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
+        MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+            Debug.Print("Start is moused over")
+        Else
+            'Repaint original
+        End If
 
     End Sub
 
