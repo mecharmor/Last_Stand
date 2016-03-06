@@ -12,13 +12,12 @@ Public Class Zombie
     Private intMovementPoint As Integer = 0
 
     'Bitmaps
-    Private btmZombieWalk1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/1.png"), 1500, 1500)
-    Private btmZombieWalk2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/2.png"), 1500, 1500)
-    Private btmZombieWalk3 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/3.png"), 1500, 1500)
-    Private btmZombieWalk4 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/4.png"), 1500, 1500)
+    Private btmZombieWalk1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/1.png"), 484, 723)
+    Private btmZombieWalk2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/2.png"), 484, 723)
+    Private btmZombieWalk3 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/3.png"), 484, 723)
+    Private btmZombieWalk4 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/4.png"), 484, 723)
     Public btmZombie As Bitmap
-    Public rectZombie As New Rectangle(intMovementPoint, 325, 900, 900)
-    Private gGraphics As Graphics
+    Public rectZombie As Rectangle
 
     Public Sub New(intSpawnPosition As Integer)
 
@@ -36,7 +35,7 @@ Public Class Zombie
         'Loop
         While True
             'Change rectangle
-            rectZombie = New Rectangle(intMovementPoint, 325, 900, 900)
+            rectZombie = New Rectangle(intMovementPoint, 400, 484, 723)
             intMovementPoint -= 7
             'Frame
             Select Case intFrame
@@ -50,7 +49,7 @@ Public Class Zombie
                     btmZombie = btmZombieWalk4
             End Select
             'Reduce CPU usage
-            System.Threading.Thread.Sleep(25)
+            System.Threading.Thread.Sleep(175) '250
             'Update the frame
             If Not blnSwitch Then
                 intFrame += 1

@@ -34,6 +34,9 @@ Public Class frmGame
     'Zombie
     Private udcZombies(9) As Zombie
 
+    'Character
+    Private udcCharacter As Character
+
     'Game variables
     Private blnStartedGame As Boolean = False
 
@@ -45,6 +48,7 @@ Public Class frmGame
     'Sound
     Private udcAmbianceSound As Sound
     Private udcButtonHoverStartSound As Sound
+    Private udcGunShotSound As Sound
 
     'Constants
     Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -130,6 +134,11 @@ Public Class frmGame
             Next
         End If
 
+        'Stop character
+        If udcCharacter IsNot Nothing Then
+            udcCharacter.StopCharacter()
+        End If
+
     End Sub
 
     Sub New()
@@ -164,6 +173,12 @@ Public Class frmGame
         While True
             'Paint on canvas first
             gGraphics = Graphics.FromImage(btmCanvas)
+            'Set options
+            gGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor
+            gGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None
+            gGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None
+            gGraphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
+            gGraphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixel
             'Check which case of the canvas
             Select Case intCanvasMode
                 Case 0
@@ -177,46 +192,70 @@ Public Class frmGame
                 Case 2
                     'Paint onto invisible canvas
                     gGraphics.DrawImage(btmBackground, rectCanvas)
+                    'Show character
+                    gGraphics.DrawImage(udcCharacter.btmCharacter, udcCharacter.rectCharacter)
                     'Show zombies
                     For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-                        'Try to paint zombies
-                        Try
+                        If udcZombies(intLoop) IsNot Nothing Then
                             gGraphics.DrawImage(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
-                        Catch ex As Exception
-                            'No debug
-                        End Try
+                        End If
                     Next
             End Select
+            'Do events
+            Application.DoEvents()
             'Set graphics
             gGraphics = Me.CreateGraphics()
+            'Set options
+            gGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor
+            gGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None
+            gGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None
+            gGraphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
+            gGraphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixel
             'Paint canvas to screen
             gGraphics.DrawImage(btmCanvas, rectFullScreen)
             'Reduce CPU usage
-            System.Threading.Thread.Sleep(60) '60 ms passes before a frame
+            System.Threading.Thread.Sleep(10) '60 ms passes before a frame
         End While
 
     End Sub
 
     Private Sub frmGame_Click(sender As Object, e As EventArgs) Handles Me.Click
 
-        'Start has been clicked
-        If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
-        MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
-        MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+        'Exit if
+        If intCanvasMode < 2 Then
 
-            'Set
-            intCanvasMode = 2
+            'Start has been clicked
+            If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
+            MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
+            MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
 
-            'Stop sound
-            udcAmbianceSound.StopSound()
+                'Character
+                udcCharacter = New Character(0 + 100)
 
-            'Play sound
-            Dim udcButtonPressedStart As New Sound("ButtonPressedStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonPressedStart.mp3")
-            udcButtonPressedStart.PlaySound(False)
+                'Zombies
+                udcZombies(0) = New Zombie(intScreenWidth)
+                udcZombies(1) = New Zombie(intScreenWidth + 200)
 
-            'Zombies
-            udcZombies(0) = New Zombie(intScreenWidth)
-            udcZombies(1) = New Zombie(intScreenWidth + 200)
+                'Do events
+                Application.DoEvents()
+
+                'Set
+                intCanvasMode = 2
+
+                'Stop sound
+                udcAmbianceSound.StopSound()
+
+                'Play sound
+                Dim udcButtonPressedStart As New Sound("ButtonPressedStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonPressedStart.mp3")
+                udcButtonPressedStart.PlaySound(False)
+
+            End If
+
+        Else
+
+            udcCharacter.blnShot = True
+            udcGunShotSound = New Sound("GunShot", AppDomain.CurrentDomain.BaseDirectory & "Sounds\GunShot.mp3")
+            udcGunShotSound.PlaySound(False)
 
         End If
 
@@ -228,29 +267,29 @@ Public Class frmGame
         Static sblnOnTopOf As Boolean = False
 
         'Exit if
-        If intCanvasMode > 1 Then
-            Exit Sub
-        End If
+        If intCanvasMode < 2 Then
 
-        'Start has been moused over
-        If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
-        MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
-        MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
-            'Only play once, don't keep looping
-            If Not sblnOnTopOf Then
-                'Set
-                sblnOnTopOf = True
-                'Hover sound
-                udcButtonHoverStartSound = New Sound("ButtonHoverStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHoverStart.mp3")
-                udcButtonHoverStartSound.PlaySound(False)
+            'Start has been moused over
+            If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
+            MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
+            MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+                'Only play once, don't keep looping
+                If Not sblnOnTopOf Then
+                    'Set
+                    sblnOnTopOf = True
+                    'Hover sound
+                    udcButtonHoverStartSound = New Sound("ButtonHoverStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHoverStart.mp3")
+                    udcButtonHoverStartSound.PlaySound(False)
+                End If
+                'Paint hovered over start
+                intCanvasMode = 1
+            Else
+                'Reset
+                sblnOnTopOf = False
+                'Repaint original
+                intCanvasMode = 0
             End If
-            'Paint hovered over start
-            intCanvasMode = 1
-        Else
-            'Reset
-            sblnOnTopOf = False
-            'Repaint original
-            intCanvasMode = 0
+
         End If
 
     End Sub
