@@ -11,18 +11,25 @@ Public Class frmGame
     Private dblScreenWidthRatio As Double = 0
     Private dblScreenHeightRatio As Double = 0
 
+    'Canvas
+    Private intCanvasMode As Integer = 0
+    Private btmCanvas As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Canvas.jpg"), 1920, 1200)
+    Private rectCanvas As New Rectangle(0, 0, 1920, 1200)
+    Private rectFullScreen As Rectangle
+
     'Menu
     Private btmMenu As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Menu.jpg"), 1920, 1200)
-    Private rectMenu As Rectangle
 
     'Start
     Private btmStart As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Start.png"), 209, 66)
-    Private rectStart As Rectangle
+    Private rectStart As New Rectangle(1250, 50, 209, 66)
+
+    'Hover start
+    Private btmStartHover As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/StartHover.png"), 295, 95)
+    Private rectStartHover As New Rectangle(1207, 36, 295, 95)
 
     'Background
-    Private btmBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), 1280, 720)
-    Private btmBackgroundCopy As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), 1280, 720)
-    Private rectBackground As Rectangle
+    Private btmBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), 1920, 1200)
 
     'Zombie
     Private udcZombies(9) As Zombie
@@ -34,6 +41,10 @@ Public Class frmGame
     Private gGraphics As Graphics
     Private thrRendering As System.Threading.Thread
     Private blnThreadSupported As Boolean = False
+
+    'Sound
+    Private udcAmbianceSound As Sound
+    Private udcButtonHoverStartSound As Sound
 
     'Constants
     Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -71,10 +82,17 @@ Public Class frmGame
         'Check if multi-threading was possible
         If Not blnThreadSupported Then
 
+            'Display
+            MessageBox.Show("This computer doesn't support multi-threading. This application will close now.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
+
             'Exit
             Me.Close()
 
         Else
+
+            'Menu sound
+            udcAmbianceSound = New Sound("Ambiance", AppDomain.CurrentDomain.BaseDirectory & "Sounds\Ambiance.mp3")
+            udcAmbianceSound.PlaySound(False)
 
             'Screen
             intScreenWidth = Me.Width '1696
@@ -84,17 +102,8 @@ Public Class frmGame
             dblScreenWidthRatio = CDbl(intScreenWidth) / 1920
             dblScreenHeightRatio = CDbl(intScreenHeight) / 1200
 
-            'Set rectangles
-            rectMenu = New Rectangle(0, 0, intScreenWidth, intScreenHeight)
-            rectStart = New Rectangle(1250, 50, 209, 66)
-            rectBackground = New Rectangle(0, 0, intScreenWidth, intScreenHeight)
-
-            'Paint onto invisible canvas
-            gGraphics = Graphics.FromImage(btmMenu)
-            gGraphics.DrawImage(btmStart, rectStart)
-
-            'Set graphics
-            gGraphics = Me.CreateGraphics() 'Prepare to draw to the form
+            'Set full rectangle
+            rectFullScreen = New Rectangle(0, 0, intScreenWidth, intScreenHeight) 'Full screen
 
             'Start rendering
             thrRendering.Start()
@@ -106,14 +115,18 @@ Public Class frmGame
     Private Sub frmGame_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
 
         'Render thread needs to be aborted
-        If thrRendering.IsAlive Then
-            thrRendering.Abort()
+        If thrRendering IsNot Nothing Then
+            If thrRendering.IsAlive Then
+                thrRendering.Abort()
+            End If
         End If
 
         'Stop zombie if he exists
-        If blnStartedGame Then
+        If udcZombies(0) IsNot Nothing Then
             For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-                udcZombies(intLoop).StopZombie()
+                If udcZombies(intLoop) IsNot Nothing Then
+                    udcZombies(intLoop).StopZombie()
+                End If
             Next
         End If
 
@@ -128,12 +141,7 @@ Public Class frmGame
         thrRendering = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Rendering))
 
         'Check for multi-threading first
-        If Not thrRendering.TrySetApartmentState(Threading.ApartmentState.MTA) Then
-
-            'Display
-            MessageBox.Show("This computer doesn't support multi-threading. This application will close now.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
-
-        Else
+        If thrRendering.TrySetApartmentState(Threading.ApartmentState.MTA) Then
 
             'Set, multi-threading is possible
             blnThreadSupported = True
@@ -154,23 +162,35 @@ Public Class frmGame
 
         'Loop
         While True
-            'If game not started
-            If Not blnStartedGame Then
-                'Draw menu
-                gGraphics.DrawImage(btmMenu, rectMenu)
-            Else
-                gGraphics = Graphics.FromImage(btmBackground)
-                Try
+            'Paint on canvas first
+            gGraphics = Graphics.FromImage(btmCanvas)
+            'Check which case of the canvas
+            Select Case intCanvasMode
+                Case 0
+                    'Paint onto invisible canvas
+                    gGraphics.DrawImage(btmMenu, rectCanvas)
+                    gGraphics.DrawImage(btmStart, rectStart)
+                Case 1
+                    'Paint onto invisible canvas
+                    gGraphics.DrawImage(btmMenu, rectCanvas)
+                    gGraphics.DrawImage(btmStartHover, rectStartHover)
+                Case 2
+                    'Paint onto invisible canvas
+                    gGraphics.DrawImage(btmBackground, rectCanvas)
+                    'Show zombies
                     For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-                        gGraphics.DrawImage(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
+                        'Try to paint zombies
+                        Try
+                            gGraphics.DrawImage(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
+                        Catch ex As Exception
+                            'No debug
+                        End Try
                     Next
-                Catch ex As Exception
-                End Try
-                gGraphics = Me.CreateGraphics()
-                gGraphics.DrawImage(btmBackground, rectBackground)
-                gGraphics = Graphics.FromImage(btmBackground)
-                gGraphics.DrawImage(btmBackgroundCopy, New Rectangle(0, 0, 1280, 720))
-            End If
+            End Select
+            'Set graphics
+            gGraphics = Me.CreateGraphics()
+            'Paint canvas to screen
+            gGraphics.DrawImage(btmCanvas, rectFullScreen)
             'Reduce CPU usage
             System.Threading.Thread.Sleep(60) '60 ms passes before a frame
         End While
@@ -183,30 +203,54 @@ Public Class frmGame
         If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
         MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
         MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
-            blnStartedGame = True
+
+            'Set
+            intCanvasMode = 2
+
+            'Stop sound
+            udcAmbianceSound.StopSound()
+
+            'Play sound
+            Dim udcButtonPressedStart As New Sound("ButtonPressedStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonPressedStart.mp3")
+            udcButtonPressedStart.PlaySound(False)
+
+            'Zombies
             udcZombies(0) = New Zombie(intScreenWidth)
-            udcZombies(1) = New Zombie(intScreenWidth + 50)
-            udcZombies(2) = New Zombie(intScreenWidth - 14)
-            udcZombies(3) = New Zombie(intScreenWidth + 15)
-            udcZombies(4) = New Zombie(intScreenWidth + 20)
-            udcZombies(5) = New Zombie(intScreenWidth - 10)
-            udcZombies(6) = New Zombie(intScreenWidth + 100)
-            udcZombies(7) = New Zombie(intScreenWidth + 67)
-            udcZombies(8) = New Zombie(intScreenWidth - 59)
-            udcZombies(9) = New Zombie(intScreenWidth + 200)
+            udcZombies(1) = New Zombie(intScreenWidth + 200)
+
         End If
 
     End Sub
 
     Private Sub frmGame_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
 
+        'Declare
+        Static sblnOnTopOf As Boolean = False
+
+        'Exit if
+        If intCanvasMode > 1 Then
+            Exit Sub
+        End If
+
         'Start has been moused over
         If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
         MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
         MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
-            Debug.Print("Start is moused over")
+            'Only play once, don't keep looping
+            If Not sblnOnTopOf Then
+                'Set
+                sblnOnTopOf = True
+                'Hover sound
+                udcButtonHoverStartSound = New Sound("ButtonHoverStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHoverStart.mp3")
+                udcButtonHoverStartSound.PlaySound(False)
+            End If
+            'Paint hovered over start
+            intCanvasMode = 1
         Else
+            'Reset
+            sblnOnTopOf = False
             'Repaint original
+            intCanvasMode = 0
         End If
 
     End Sub
