@@ -7,9 +7,9 @@ Public Class Character
 
     'Declare
     Private intFrame As Integer = 1
-    Private thrWalking As System.Threading.Thread
+    Private thrAnimation As System.Threading.Thread
     Private intMovementPoint As Integer = 0
-    Public blnShot As Boolean = False
+    Private blnShot As Boolean = False
 
     'Bitmaps
     Private btmCharacterStand1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/1.png"), 643, 710)
@@ -19,19 +19,38 @@ Public Class Character
     Public btmCharacter As Bitmap
     Public rectCharacter As Rectangle
 
-    Public Sub New(intSpawnPosition As Integer)
+    Public Sub New(intSpawnPosition As Integer, Optional blnStart As Boolean = False)
 
         'Set
         intMovementPoint = intSpawnPosition
         rectCharacter = New Rectangle(intMovementPoint, 400, 643, 710)
 
-        'Start thread
-        thrWalking = New System.Threading.Thread(Sub() Walking())
-        thrWalking.Start()
+        'Set
+        thrAnimation = New System.Threading.Thread(Sub() Animating())
+
+        'Start
+        If blnStart Then
+            Start()
+        End If
 
     End Sub
 
-    Private Sub Walking()
+    Public Sub Start()
+
+        'Start thread
+        thrAnimation.Start()
+
+    End Sub
+
+    Public Sub CharacterShot()
+
+        'Change frame immediately
+        btmCharacter = btmCharacterShoot1
+        blnShot = True
+
+    End Sub
+
+    Private Sub Animating()
 
         'Loop
         While True
@@ -39,30 +58,31 @@ Public Class Character
             Select Case intFrame
                 Case 1
                     btmCharacter = btmCharacterStand1
+                    'Reduce CPU usage
+                    System.Threading.Thread.Sleep(300) '300
                 Case 2
                     btmCharacter = btmCharacterStand2
+                    'Reduce CPU usage
+                    System.Threading.Thread.Sleep(300) '300
                 Case 3
                     btmCharacter = btmCharacterShoot1
+                    'Reduce CPU usage
+                    System.Threading.Thread.Sleep(185) '300
                 Case 4
                     btmCharacter = btmCharacterShoot2
+                    'Reduce CPU usage
+                    System.Threading.Thread.Sleep(160) '300
             End Select
             'Update the frame
             If blnShot Then
+                'Change frame
                 If intFrame = 3 Then
-                    'Reduce CPU usage
-                    System.Threading.Thread.Sleep(175) '250
-                    'Change frame
                     intFrame = 4
                     blnShot = False
                 Else
-                    'Reduce CPU usage
-                    System.Threading.Thread.Sleep(200) '300
-                    'Change frame
                     intFrame = 3
                 End If
             Else
-                'Reduce CPU usage
-                System.Threading.Thread.Sleep(225) '350
                 'Change frame
                 If intFrame = 1 Then
                     intFrame = 2
@@ -77,8 +97,8 @@ Public Class Character
     Public Sub StopCharacter()
 
         'Abort thread
-        If thrWalking.IsAlive Then
-            thrWalking.Abort()
+        If thrAnimation.IsAlive Then
+            thrAnimation.Abort()
         End If
 
     End Sub

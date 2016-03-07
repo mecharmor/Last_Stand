@@ -19,13 +19,3 @@ L:\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplicati
 L:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.frmGame.resources
 L:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.Resources.resources
 L:\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.vbproj.GenerateResource.Cache
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.exe.config
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.exe
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.xml
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.pdb
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.exe
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.pdb
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\bin\Debug\WindowsApplication1.xml
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.frmGame.resources
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.Resources.resources
-F:\Documents\GitHub\Last_Stand\Last Stand\WindowsApplication1\WindowsApplication1\obj\Debug\WindowsApplication1.vbproj.GenerateResource.Cache
