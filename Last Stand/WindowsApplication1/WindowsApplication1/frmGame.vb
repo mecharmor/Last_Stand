@@ -14,23 +14,24 @@ Public Class frmGame
     'Canvas
     Private intCanvasMode As Integer = 0
     Private btmCanvas As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Canvas.jpg"), 1920, 1200)
-    Private rectCanvas As New Rectangle(0, 0, 1920, 1200)
-    Private rectFullScreen As Rectangle
+    Private pntTopLeft As New Point(0, 0)
+    Private intSystemHeightCaption As Integer = 0 'Usually 22 pixels
+    Private rectFullScreen As Rectangle 'Setup for full screen later
 
     'Menu
     Private btmMenu As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Menu.jpg"), 1920, 1200)
 
     'Last stand
     Private btmLastStand As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LastStand.png"), 1350, 200)
-    Private rectLastStand As New Rectangle(282, 954, 1350, 200)
+    Private pntLastStand As New Point(282, 954)
 
     'Start
     Private btmStart As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Start.png"), 209, 66)
-    Private rectStart As New Rectangle(1250, 50, 209, 66)
+    Private pntStart As New Point(1250, 50)
 
     'Hover start
     Private btmStartHover As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/StartHover.png"), 295, 95)
-    Private rectStartHover As New Rectangle(1207, 36, 295, 95)
+    Private pntStartHover As New Point(1207, 36)
 
     'Story
     Private btmLoadingBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBackground.jpg"), 1920, 1200)
@@ -41,7 +42,7 @@ Public Class frmGame
     Private btmLoadingParagraph50 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingParagraph/LoadingParagraph50.png"), 1424, 472)
     Private btmLoadingParagraph75 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingParagraph/LoadingParagraph75.png"), 1424, 472)
     Private btmLoadingParagraph100 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingParagraph/LoadingParagraph100.png"), 1424, 472)
-    Private rectLoadingParagraph As New Rectangle(264, 350, 1424, 472)
+    Private pntLoadingParagraph As New Point(264, 350)
     Private intLoadingParagraph As Integer = 0
 
     'Loading bar
@@ -57,29 +58,26 @@ Public Class frmGame
     Private btmLoading90 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBar/90.png"), 1613, 134)
     Private btmLoading99 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBar/99.png"), 1613, 134) 'Troll bar
     Private btmLoading100 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBar/100.png"), 1613, 134)
-    Private rectLoading As New Rectangle(144, 945, 1613, 134)
+    Private pntLoading As New Point(144, 945)
     Private intLoadingGameObjects As Integer = 0
     Private thrLoadingGameObjects As System.Threading.Thread
 
     'Loading text
     Private btmLoadingText As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBar/LoadingText.png"), 430, 101)
-    Private rectLoadingText As New Rectangle(754, 960, 430, 101)
+    Private pntLoadingText As New Point(754, 960)
 
     'Start text
     Private btmLoadingStartText As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/LoadingBar/LoadingStartText.png"), 273, 83)
-    Private rectLoadingStartText As New Rectangle(820, 970, 273, 83)
+    Private pntLoadingStartText As New Point(820, 970)
 
     'Background
     Private btmBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), 1920, 1200)
 
-    'Zombie
+    'Zombies
     Private udcZombies(9) As Zombie
 
     'Character
     Private udcCharacter As Character
-
-    'Game variables
-    Private blnStartedGame As Boolean = False
 
     'Graphics
     Private gGraphics As Graphics
@@ -128,33 +126,26 @@ Public Class frmGame
 
         'Check if multi-threading was possible
         If Not blnThreadSupported Then
-
             'Display
             MessageBox.Show("This computer doesn't support multi-threading. This application will close now.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
-
             'Exit
             Me.Close()
-
         Else
-
             'Menu sound
             udcAmbianceSound = New Sound("Ambiance", AppDomain.CurrentDomain.BaseDirectory & "Sounds\Ambiance.mp3")
             udcAmbianceSound.PlaySound(False)
-
             'Screen
-            intScreenWidth = Me.Width '1696
-            intScreenHeight = Me.Height '1066
-
+            intScreenWidth = Me.Width
+            intScreenHeight = Me.Height
+            'Set height caption, title bar measurement
+            intSystemHeightCaption = SystemInformation.CaptionHeight
             'Current screen ratio
             dblScreenWidthRatio = CDbl(intScreenWidth) / 1920
             dblScreenHeightRatio = CDbl(intScreenHeight) / 1200
-
             'Set full rectangle
-            rectFullScreen = New Rectangle(0, 0, intScreenWidth, intScreenHeight) 'Full screen
-
+            rectFullScreen = New Rectangle(0, -intSystemHeightCaption, intScreenWidth, intScreenHeight) 'Full screen
             'Start rendering
             thrRendering.Start()
-
         End If
 
     End Sub
@@ -215,18 +206,14 @@ Public Class frmGame
 
         'Check for multi-threading first
         If thrRendering.TrySetApartmentState(Threading.ApartmentState.MTA) Then
-
             'Set, multi-threading is possible
             blnThreadSupported = True
-
             'Stop the paint event, we will do the painting when we want to
             MyBase.SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
             MyBase.SetStyle(ControlStyles.AllPaintingInWmPaint, True)
             MyBase.SetStyle(ControlStyles.UserPaint, False)
-
             'Lock down the window size
             Me.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
-
         End If
 
     End Sub
@@ -238,99 +225,95 @@ Public Class frmGame
             'Paint on canvas first
             gGraphics = Graphics.FromImage(btmCanvas)
             'Set options
-            gGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor
-            gGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None
-            gGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None
-            gGraphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
-            gGraphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixel
+            SetDefaultGraphicOptions(gGraphics)
             'Check which case of the canvas
             Select Case intCanvasMode
                 Case 0
                     'Paint onto invisible canvas
-                    gGraphics.DrawImage(btmMenu, rectCanvas)
-                    gGraphics.DrawImage(btmLastStand, rectLastStand)
-                    gGraphics.DrawImage(btmStart, rectStart)
+                    gGraphics.DrawImageUnscaled(btmMenu, pntTopLeft)
+                    gGraphics.DrawImageUnscaled(btmLastStand, pntLastStand)
+                    gGraphics.DrawImageUnscaled(btmStart, pntStart)
                 Case 1
                     'Paint onto invisible canvas
-                    gGraphics.DrawImage(btmMenu, rectCanvas)
-                    gGraphics.DrawImage(btmLastStand, rectLastStand)
-                    gGraphics.DrawImage(btmStartHover, rectStartHover)
+                    gGraphics.DrawImageUnscaled(btmMenu, pntTopLeft)
+                    gGraphics.DrawImageUnscaled(btmLastStand, pntLastStand)
+                    gGraphics.DrawImageUnscaled(btmStartHover, pntStartHover)
                 Case 2
                     'Paint onto invisible canvas
-                    gGraphics.DrawImage(btmLoadingBackground, rectCanvas)
+                    gGraphics.DrawImageUnscaled(btmLoadingBackground, pntTopLeft)
                     'Check loading
                     Select Case intLoadingGameObjects
                         Case 0
-                            gGraphics.DrawImage(btmLoading0, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading0, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 10
-                            gGraphics.DrawImage(btmLoading10, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading10, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 20
-                            gGraphics.DrawImage(btmLoading20, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading20, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 30
-                            gGraphics.DrawImage(btmLoading30, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading30, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 40
-                            gGraphics.DrawImage(btmLoading40, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading40, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 50
-                            gGraphics.DrawImage(btmLoading50, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading50, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 60
-                            gGraphics.DrawImage(btmLoading60, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading60, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 70
-                            gGraphics.DrawImage(btmLoading70, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading70, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 80
-                            gGraphics.DrawImage(btmLoading80, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading80, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 90
-                            gGraphics.DrawImage(btmLoading90, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading90, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 99
-                            gGraphics.DrawImage(btmLoading99, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading99, pntLoading)
                             'Loading... text
-                            gGraphics.DrawImage(btmLoadingText, rectLoadingText)
+                            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
                         Case 100
-                            gGraphics.DrawImage(btmLoading100, rectLoading)
+                            gGraphics.DrawImageUnscaled(btmLoading100, pntLoading)
                             'Start text
-                            gGraphics.DrawImage(btmLoadingStartText, rectLoadingStartText)
+                            gGraphics.DrawImageUnscaled(btmLoadingStartText, pntLoadingStartText)
                     End Select
                     'Loading paragraph
                     Select Case intLoadingParagraph
                         Case 0
                             'Waiting
                         Case 1
-                            gGraphics.DrawImage(btmLoadingParagraph25, rectLoadingParagraph)
+                            gGraphics.DrawImageUnscaled(btmLoadingParagraph25, pntLoadingParagraph)
                         Case 2
-                            gGraphics.DrawImage(btmLoadingParagraph50, rectLoadingParagraph)
+                            gGraphics.DrawImageUnscaled(btmLoadingParagraph50, pntLoadingParagraph)
                         Case 3
-                            gGraphics.DrawImage(btmLoadingParagraph75, rectLoadingParagraph)
+                            gGraphics.DrawImageUnscaled(btmLoadingParagraph75, pntLoadingParagraph)
                         Case 4
-                            gGraphics.DrawImage(btmLoadingParagraph100, rectLoadingParagraph)
+                            gGraphics.DrawImageUnscaled(btmLoadingParagraph100, pntLoadingParagraph)
                     End Select
                 Case 3
                     'Paint onto invisible canvas
-                    gGraphics.DrawImage(btmBackground, rectCanvas)
+                    gGraphics.DrawImageUnscaled(btmBackground, pntTopLeft)
                     'Show character
-                    gGraphics.DrawImage(udcCharacter.btmCharacter, udcCharacter.rectCharacter)
+                    gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.rectCharacter)
                     'Show zombies
                     For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
                         If udcZombies(intLoop) IsNot Nothing Then
-                            gGraphics.DrawImage(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
+                            gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
                         End If
                     Next
                     'Check distance
@@ -343,21 +326,42 @@ Public Class frmGame
                         End If
                     Next
             End Select
-            'Do events
-            Application.DoEvents()
             'Set graphics
             gGraphics = Me.CreateGraphics()
             'Set options
-            gGraphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor
-            gGraphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None
-            gGraphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None
-            gGraphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
-            gGraphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixel
+            SetDefaultGraphicOptions(gGraphics)
             'Paint canvas to screen
             gGraphics.DrawImage(btmCanvas, rectFullScreen)
+            'Do events
+            Application.DoEvents()
         End While
 
     End Sub
+
+    Private Sub SetDefaultGraphicOptions(gGraphicsDeviceContext As Graphics)
+
+        'Set options for fastest rendering
+        gGraphicsDeviceContext.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor
+        gGraphicsDeviceContext.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None
+        gGraphicsDeviceContext.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.None
+        gGraphicsDeviceContext.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighSpeed
+        gGraphicsDeviceContext.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixel
+
+    End Sub
+
+    Private Function MouseInRegion(intImageWidth As Integer, intImageHeight As Integer, pntStartingPoint As Point) As Boolean
+
+        'Return
+        If MousePosition.X >= CInt(pntStartingPoint.X * dblScreenWidthRatio) And
+        MousePosition.X <= CInt((pntStartingPoint.X + intImageWidth) * dblScreenWidthRatio) And
+        MousePosition.Y >= CInt(pntStartingPoint.Y * dblScreenHeightRatio) And
+        MousePosition.Y <= CInt((pntStartingPoint.Y + intImageHeight) * dblScreenHeightRatio) Then
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
 
     Private Sub frmGame_Click(sender As Object, e As EventArgs) Handles Me.Click
 
@@ -365,9 +369,7 @@ Public Class frmGame
         If intCanvasMode < 2 Then
 
             'Start has been clicked
-            If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
-            MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
-            MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+            If MouseInRegion(209, 66, pntStart) Then
                 'Set
                 intCanvasMode = 2
                 'Stop sound
@@ -392,9 +394,7 @@ Public Class frmGame
         If intCanvasMode = 2 And intLoadingGameObjects = 100 Then
 
             'Start has been clicked
-            If MousePosition.X >= CInt(144 * dblScreenWidthRatio) And MousePosition.X <= CInt((144 + 1613) * dblScreenWidthRatio) And
-            MousePosition.Y >= CInt((945 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
-            MousePosition.Y <= CInt((945 + 134 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+            If MouseInRegion(1613, 134, pntLoading) Then
                 'Set
                 intCanvasMode = 3
                 'Start character
@@ -450,47 +450,50 @@ Public Class frmGame
         intLoadingGameObjects = 50
 
         'Character
-        udcCharacter = New Character(100)
+        udcCharacter = New Character(CInt(100 * dblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 60
 
         'Zombie
-        udcZombies(0) = New Zombie(intScreenWidth)
+        udcZombies(0) = New Zombie(CInt(intScreenWidth * dblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 70
 
         'Zombie
-        udcZombies(1) = New Zombie(intScreenWidth + 200, False, 50)
+        udcZombies(1) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 200), False, 50)
 
         'Set
         intLoadingGameObjects = 80
 
         'Zombie
-        udcZombies(2) = New Zombie(intScreenWidth + 400)
+        udcZombies(2) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 400))
 
         'Set
         intLoadingGameObjects = 90
 
         'Zombie
-        udcZombies(3) = New Zombie(intScreenWidth + 500)
+        udcZombies(3) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 500))
 
         'Set
         intLoadingGameObjects = 99 'Trolling
 
         'Zombie
-        udcZombies(4) = New Zombie(intScreenWidth + 700)
+        udcZombies(4) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 700))
         'Zombie
-        udcZombies(5) = New Zombie(intScreenWidth + 800)
+        udcZombies(5) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 800))
         'Zombie
-        udcZombies(6) = New Zombie(intScreenWidth + 900, False, 35)
+        udcZombies(6) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 900), False, 35)
         'Zombie
-        udcZombies(7) = New Zombie(intScreenWidth + 1000)
+        udcZombies(7) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1000))
         'Zombie
-        udcZombies(8) = New Zombie(intScreenWidth + 1100)
+        udcZombies(8) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1100))
         'Zombie
-        udcZombies(9) = New Zombie(intScreenWidth + 1200, False, 65)
+        udcZombies(9) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1200), False, 65)
+
+        'Wait
+        Application.DoEvents()
 
         'Set
         intLoadingGameObjects = 100
@@ -502,19 +505,19 @@ Public Class frmGame
         'Wait
         System.Threading.Thread.Sleep(300)
         'Change
-        intLoadingParagraph = 1
+        intLoadingParagraph = 1 'Opacity 25%
         'Wait
         System.Threading.Thread.Sleep(200)
         'Change
-        intLoadingParagraph = 2
+        intLoadingParagraph = 2 'Opacity 50%
         'Wait
         System.Threading.Thread.Sleep(200)
         'Change
-        intLoadingParagraph = 3
+        intLoadingParagraph = 3 'Opacity 75%
         'Wait
         System.Threading.Thread.Sleep(200)
         'Change
-        intLoadingParagraph = 4
+        intLoadingParagraph = 4 'Opacity 100%
 
     End Sub
 
@@ -527,9 +530,7 @@ Public Class frmGame
         If intCanvasMode < 2 Then
 
             'Start has been moused over
-            If MousePosition.X >= CInt(1250 * dblScreenWidthRatio) And MousePosition.X <= CInt((1250 + 209) * dblScreenWidthRatio) And
-            MousePosition.Y >= CInt((50 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) And
-            MousePosition.Y <= CInt((50 + 66 + SystemInformation.CaptionHeight) * dblScreenHeightRatio) Then
+            If MouseInRegion(209, 66, pntStart) Then
                 'Paint hovered over start
                 intCanvasMode = 1
                 'Only play once, don't keep looping
