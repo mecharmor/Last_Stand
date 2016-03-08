@@ -3,7 +3,7 @@ Option Explicit On
 Option Strict On
 Option Infer Off
 
-Public Class Sound
+Public Class SoundClass
 
     'Declare
     Private _strName As String = ""

@@ -70,7 +70,8 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Character.vb" />
+    <Compile Include="CharacterClass.vb" />
+    <Compile Include="ImagesModule.vb" />
     <Compile Include="frmGame.vb">
       <SubType>Form</SubType>
     </Compile>
@@ -93,8 +94,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="Sound.vb" />
-    <Compile Include="Zombie.vb" />
+    <Compile Include="SoundClass.vb" />
+    <Compile Include="ZombieClass.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="frmGame.resx">

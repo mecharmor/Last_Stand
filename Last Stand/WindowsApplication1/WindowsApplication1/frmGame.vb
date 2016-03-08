@@ -74,10 +74,10 @@ Public Class frmGame
     Private btmBackground As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Background.jpg"), 1920, 1200)
 
     'Zombies
-    Private udcZombies(9) As Zombie
+    Private udcZombies(9) As ZombieClass
 
     'Character
-    Private udcCharacter As Character
+    Private udcCharacter As CharacterClass
 
     'Graphics
     Private gGraphics As Graphics
@@ -85,11 +85,11 @@ Public Class frmGame
     Private blnThreadSupported As Boolean = False
 
     'Sound
-    Private udcAmbianceSound As Sound
-    Private udcButtonHoverStartSound As Sound
+    Private udcAmbianceSound As SoundClass
+    Private udcButtonHoverStartSound As SoundClass
     Private thrStartSoundWaiting As System.Threading.Thread
-    Private udcGunShotSound As Sound
-    Private udcShellEjectedSound As Sound
+    Private udcGunShotSound As SoundClass
+    Private udcShellEjectedSound As SoundClass
 
     'Constants
     Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -132,7 +132,7 @@ Public Class frmGame
             Me.Close()
         Else
             'Menu sound
-            udcAmbianceSound = New Sound("Ambiance", AppDomain.CurrentDomain.BaseDirectory & "Sounds\Ambiance.mp3")
+            udcAmbianceSound = New SoundClass("Ambiance", AppDomain.CurrentDomain.BaseDirectory & "Sounds\Ambiance.mp3")
             udcAmbianceSound.PlaySound(False)
             'Screen
             intScreenWidth = Me.Width
@@ -140,8 +140,8 @@ Public Class frmGame
             'Set height caption, title bar measurement
             intSystemHeightCaption = SystemInformation.CaptionHeight
             'Current screen ratio
-            dblScreenWidthRatio = CDbl(intScreenWidth) / 1920
-            dblScreenHeightRatio = CDbl(intScreenHeight) / 1200
+            dblScreenWidthRatio = CDbl(intScreenWidth / 1920)
+            dblScreenHeightRatio = CDbl(intScreenHeight / 1200)
             'Set full rectangle
             rectFullScreen = New Rectangle(0, -intSystemHeightCaption, intScreenWidth, intScreenHeight) 'Full screen
             'Start rendering
@@ -184,14 +184,14 @@ Public Class frmGame
         If udcZombies(0) IsNot Nothing Then
             For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
                 If udcZombies(intLoop) IsNot Nothing Then
-                    udcZombies(intLoop).StopZombie()
+                    udcZombies(intLoop).StopAndDispose()
                 End If
             Next
         End If
 
         'Stop character
         If udcCharacter IsNot Nothing Then
-            udcCharacter.StopCharacter()
+            udcCharacter.StopAndDispose()
         End If
 
     End Sub
@@ -212,6 +212,8 @@ Public Class frmGame
             MyBase.SetStyle(ControlStyles.OptimizedDoubleBuffer, True)
             MyBase.SetStyle(ControlStyles.AllPaintingInWmPaint, True)
             MyBase.SetStyle(ControlStyles.UserPaint, False)
+            'Form buffer
+            Me.DoubleBuffered = True
             'Lock down the window size
             Me.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
         End If
@@ -309,18 +311,18 @@ Public Class frmGame
                     'Paint onto invisible canvas
                     gGraphics.DrawImageUnscaled(btmBackground, pntTopLeft)
                     'Show character
-                    gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.rectCharacter)
+                    gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.pntCharacter)
                     'Show zombies
                     For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
                         If udcZombies(intLoop) IsNot Nothing Then
-                            gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).rectZombie)
+                            gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
                         End If
                     Next
                     'Check distance
                     For IntLoop As Integer = 0 To udcZombies.GetUpperBound(0)
                         If udcZombies(IntLoop) IsNot Nothing Then
                             'Close game if too close to character
-                            If udcZombies(IntLoop).rectZombie.X <= 200 Then
+                            If udcZombies(IntLoop).pntZombie.X <= CInt(200 * dblScreenWidthRatio) Then
                                 Me.Invoke(Sub() Me.Close()) 'Exit
                             End If
                         End If
@@ -375,7 +377,7 @@ Public Class frmGame
                 'Stop sound
                 udcAmbianceSound.StopSound()
                 'Play sound
-                Dim udcButtonPressedStart As New Sound("ButtonPressedStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonPressedStart.mp3")
+                Dim udcButtonPressedStart As New SoundClass("ButtonPressedStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonPressedStart.mp3")
                 udcButtonPressedStart.PlaySound(False)
                 'Start loading
                 thrLoadingParagraph = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf LoadingParagraph))
@@ -395,8 +397,6 @@ Public Class frmGame
 
             'Start has been clicked
             If MouseInRegion(1613, 134, pntLoading) Then
-                'Set
-                intCanvasMode = 3
                 'Start character
                 udcCharacter.Start()
                 'Start zombies
@@ -405,6 +405,10 @@ Public Class frmGame
                         udcZombies(intLoop).Start()
                     End If
                 Next
+                'Do events to make sure they are set
+                Application.DoEvents()
+                'Set
+                intCanvasMode = 3
             End If
 
             'Exit
@@ -417,10 +421,10 @@ Public Class frmGame
 
             'Shoot immediately
             udcCharacter.CharacterShot()
-            udcGunShotSound = New Sound("GunShot", AppDomain.CurrentDomain.BaseDirectory & "Sounds\GunShot.mp3")
+            udcGunShotSound = New SoundClass("GunShot", AppDomain.CurrentDomain.BaseDirectory & "Sounds\GunShot.mp3")
             udcGunShotSound.PlaySound(False)
-            System.Threading.Thread.Sleep(500)
-            udcShellEjectedSound = New Sound("ShellEjected", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ShellEjected.mp3")
+            'System.Threading.Thread.Sleep(500)
+            udcShellEjectedSound = New SoundClass("ShellEjected", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ShellEjected.mp3")
             udcShellEjectedSound.PlaySound(False)
 
             'Kill zombie
@@ -450,47 +454,47 @@ Public Class frmGame
         intLoadingGameObjects = 50
 
         'Character
-        udcCharacter = New Character(CInt(100 * dblScreenWidthRatio))
+        udcCharacter = New CharacterClass(CInt(100 * dblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 60
 
         'Zombie
-        udcZombies(0) = New Zombie(CInt(intScreenWidth * dblScreenWidthRatio))
+        udcZombies(0) = New ZombieClass(CInt(intScreenWidth * dblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 70
 
         'Zombie
-        udcZombies(1) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 200), False, 50)
+        udcZombies(1) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 200), False, 35)
 
         'Set
         intLoadingGameObjects = 80
 
         'Zombie
-        udcZombies(2) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 400))
+        udcZombies(2) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 400))
 
         'Set
         intLoadingGameObjects = 90
 
         'Zombie
-        udcZombies(3) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 500))
+        udcZombies(3) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 500))
 
         'Set
         intLoadingGameObjects = 99 'Trolling
 
         'Zombie
-        udcZombies(4) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 700))
+        udcZombies(4) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 700))
         'Zombie
-        udcZombies(5) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 800))
+        udcZombies(5) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 800))
         'Zombie
-        udcZombies(6) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 900), False, 35)
+        udcZombies(6) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 900), False, 35)
         'Zombie
-        udcZombies(7) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1000))
+        udcZombies(7) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1000))
         'Zombie
-        udcZombies(8) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1100))
+        udcZombies(8) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1100))
         'Zombie
-        udcZombies(9) = New Zombie(CInt((intScreenWidth * dblScreenWidthRatio) + 1200), False, 65)
+        udcZombies(9) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1200), False, 35)
 
         'Wait
         Application.DoEvents()
@@ -540,7 +544,7 @@ Public Class frmGame
                     'Hover sound
                     If thrStartSoundWaiting Is Nothing Then
                         'Play sound
-                        udcButtonHoverStartSound = New Sound("ButtonHoverStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHoverStart.mp3")
+                        udcButtonHoverStartSound = New SoundClass("ButtonHoverStart", AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHoverStart.mp3")
                         udcButtonHoverStartSound.PlaySound(False)
                         'Start a waiting thread of 2500 ms
                         thrStartSoundWaiting = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf StartSoundWaiting))
