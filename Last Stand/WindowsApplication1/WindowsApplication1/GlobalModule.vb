@@ -3,7 +3,11 @@ Option Explicit On
 Option Strict On
 Option Infer Off
 
-Module ImagesModule
+Module GlobalModule
+
+    'Screen width ratio
+    Public gdblScreenWidthRatio As Double = 0
+    Public gdblScreenHeightRatio As Double = 0
 
     'Character
     Public gbtmCharacterStand1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/1.png"), 643, 710)

@@ -8,8 +8,6 @@ Public Class frmGame
     'Screen
     Private intScreenWidth As Integer = 0
     Private intScreenHeight As Integer = 0
-    Private dblScreenWidthRatio As Double = 0
-    Private dblScreenHeightRatio As Double = 0
 
     'Canvas
     Private intCanvasMode As Integer = 0
@@ -139,9 +137,9 @@ Public Class frmGame
             intScreenHeight = Me.Height
             'Set height caption, title bar measurement
             intSystemHeightCaption = SystemInformation.CaptionHeight
-            'Current screen ratio
-            dblScreenWidthRatio = CDbl(intScreenWidth / 1920)
-            dblScreenHeightRatio = CDbl(intScreenHeight / 1200)
+            'Set global current screen ratio
+            gdblScreenWidthRatio = CDbl(intScreenWidth / 1920)
+            gdblScreenHeightRatio = CDbl(intScreenHeight / 1200)
             'Set full rectangle
             rectFullScreen = New Rectangle(0, -intSystemHeightCaption, intScreenWidth, intScreenHeight) 'Full screen
             'Start rendering
@@ -322,7 +320,7 @@ Public Class frmGame
                     For IntLoop As Integer = 0 To udcZombies.GetUpperBound(0)
                         If udcZombies(IntLoop) IsNot Nothing Then
                             'Close game if too close to character
-                            If udcZombies(IntLoop).pntZombie.X <= CInt(200 * dblScreenWidthRatio) Then
+                            If udcZombies(IntLoop).pntZombie.X <= CInt(200 * gdblScreenWidthRatio) Then
                                 Me.Invoke(Sub() Me.Close()) 'Exit
                             End If
                         End If
@@ -354,10 +352,10 @@ Public Class frmGame
     Private Function MouseInRegion(intImageWidth As Integer, intImageHeight As Integer, pntStartingPoint As Point) As Boolean
 
         'Return
-        If MousePosition.X >= CInt(pntStartingPoint.X * dblScreenWidthRatio) And
-        MousePosition.X <= CInt((pntStartingPoint.X + intImageWidth) * dblScreenWidthRatio) And
-        MousePosition.Y >= CInt(pntStartingPoint.Y * dblScreenHeightRatio) And
-        MousePosition.Y <= CInt((pntStartingPoint.Y + intImageHeight) * dblScreenHeightRatio) Then
+        If MousePosition.X >= CInt(pntStartingPoint.X * gdblScreenWidthRatio) And
+        MousePosition.X <= CInt((pntStartingPoint.X + intImageWidth) * gdblScreenWidthRatio) And
+        MousePosition.Y >= CInt(pntStartingPoint.Y * gdblScreenHeightRatio) And
+        MousePosition.Y <= CInt((pntStartingPoint.Y + intImageHeight) * gdblScreenHeightRatio) Then
             Return True
         Else
             Return False
@@ -454,47 +452,47 @@ Public Class frmGame
         intLoadingGameObjects = 50
 
         'Character
-        udcCharacter = New CharacterClass(CInt(100 * dblScreenWidthRatio))
+        udcCharacter = New CharacterClass(CInt(100 * gdblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 60
 
         'Zombie
-        udcZombies(0) = New ZombieClass(CInt(intScreenWidth * dblScreenWidthRatio))
+        udcZombies(0) = New ZombieClass(CInt(intScreenWidth * gdblScreenWidthRatio))
 
         'Set
         intLoadingGameObjects = 70
 
         'Zombie
-        udcZombies(1) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 200), False, 35)
+        udcZombies(1) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 200), False, 35)
 
         'Set
         intLoadingGameObjects = 80
 
         'Zombie
-        udcZombies(2) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 400))
+        udcZombies(2) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 400))
 
         'Set
         intLoadingGameObjects = 90
 
         'Zombie
-        udcZombies(3) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 500))
+        udcZombies(3) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 500))
 
         'Set
         intLoadingGameObjects = 99 'Trolling
 
         'Zombie
-        udcZombies(4) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 700))
+        udcZombies(4) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 700))
         'Zombie
-        udcZombies(5) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 800))
+        udcZombies(5) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 800))
         'Zombie
-        udcZombies(6) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 900), False, 35)
+        udcZombies(6) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 900), False, 35)
         'Zombie
-        udcZombies(7) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1000))
+        udcZombies(7) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 1000))
         'Zombie
-        udcZombies(8) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1100))
+        udcZombies(8) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 1100))
         'Zombie
-        udcZombies(9) = New ZombieClass(CInt((intScreenWidth * dblScreenWidthRatio) + 1200), False, 35)
+        udcZombies(9) = New ZombieClass(CInt((intScreenWidth * gdblScreenWidthRatio) + 1200), False, 35)
 
         'Wait
         Application.DoEvents()

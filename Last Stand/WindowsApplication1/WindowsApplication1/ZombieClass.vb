@@ -10,7 +10,7 @@ Public Class ZombieClass
     Private thrAnimation As System.Threading.Thread
     Private blnSwitch As Boolean = False
     Private intMovementPoint As Integer = 0
-    Private _intSpeed As Integer = 25
+    Private _intSpeed As Integer = CInt(25 * gdblScreenWidthRatio)
 
     'Bitmaps
     Public btmZombie As Bitmap
@@ -25,13 +25,17 @@ Public Class ZombieClass
     'Death
     Private blnAlive As Boolean = True
 
-    Public Sub New(intSpawnPosition As Integer, Optional blnStart As Boolean = False, Optional intSpeed As Integer = 25)
+    Public Sub New(intSpawnPosition As Integer, Optional blnStart As Boolean = False, Optional intSpeed As Integer = 0)
 
         'Preset
         btmZombie = gbtmZombieWalk1
 
         'Set
-        _intSpeed = intSpeed
+        If intSpeed = 0 Then
+            _intSpeed = CInt(25 * gdblScreenWidthRatio) 'To make standard
+        Else
+            _intSpeed = CInt(intSpeed * gdblScreenWidthRatio)
+        End If
 
         'Set
         intMovementPoint = intSpawnPosition
