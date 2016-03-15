@@ -29,55 +29,55 @@ Public Class frmGame
     Private pntTopLeft As New Point(0, 0)
     Private intCanvasMode As Integer = 0 'Default menu screen
     Private intCanvasShow As Integer = 0 'Default, no animation
-    Private strDirectory As String = AppDomain.CurrentDomain.BaseDirectory
+    Private strDirectory As String = AppDomain.CurrentDomain.BaseDirectory & "\"
     Private blnScreenChanged As Boolean = False
 
     'Menu necessary needs
-    Private btmMenuBackground As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\MenuBackground.jpg"))
-    Private btmFogFrontPass1 As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\FogFront.png"))
-    Private btmFogBackPass1 As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\FogBack.png"))
+    Private btmMenuBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\MenuBackground.jpg"))
+    Private btmFogFrontPass1 As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\FogFront.png"))
+    Private btmFogBackPass1 As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\FogBack.png"))
     Private intFogPass1X As Integer = -(ORIGINALSCREENWIDTH * 2)
     Private intFogFrontPass1Y As Integer = 650
     Private intFogBackPass1Y As Integer = 250
     Private pntFogFrontPass1 As New Point(intFogPass1X, intFogFrontPass1Y)
     Private pntFogBackPass1 As New Point(intFogPass1X, intFogBackPass1Y)
-    Private btmFogFrontPass2 As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\FogFront.png"))
-    Private btmFogBackPass2 As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\FogBack.png"))
+    Private btmFogFrontPass2 As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\FogFront.png"))
+    Private btmFogBackPass2 As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\FogBack.png"))
     Private intFogPass2X As Integer = -((ORIGINALSCREENWIDTH * 2) * 2)
     Private intFogFrontPass2Y As Integer = 650
     Private intFogBackPass2Y As Integer = 250
     Private pntFogFrontPass2 As New Point(intFogPass2X, intFogFrontPass2Y)
     Private pntFogBackPass2 As New Point(intFogPass2X, intFogBackPass2Y)
     Private thrFog As System.Threading.Thread
-    Private btmArcher As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Archer.png"))
+    Private btmArcher As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Archer.png"))
     Private pntArcher As New Point(117, 0)
-    Private btmLastStandText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\LastStand.png"))
+    Private btmLastStandText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\LastStand.png"))
     Private pntLastStandText As New Point(147, 833)
 
     'Menu buttons
-    Private btmStartText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Start.png"))
+    Private btmStartText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Start.png"))
     Private pntStartText As New Point(1081, 31)
-    Private btmStartHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\StartHover.png"))
+    Private btmStartHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\StartHover.png"))
     Private pntStartHoverText As New Point(1059, 25)
-    Private btmHighscoresText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Highscores.png"))
+    Private btmHighscoresText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Highscores.png"))
     Private pntHighscoresText As New Point(1198, 141)
-    Private btmHighscoresHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\HighscoresHover.png"))
+    Private btmHighscoresHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\HighscoresHover.png"))
     Private pntHighscoresHoverText As New Point(1157, 131)
-    Private btmStoryText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Story.png"))
+    Private btmStoryText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Story.png"))
     Private pntStoryText As New Point(1246, 283)
-    Private btmStoryHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\StoryHover.png"))
+    Private btmStoryHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\StoryHover.png"))
     Private pntStoryHoverText As New Point(1222, 275)
-    Private btmOptionsText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Options.png"))
+    Private btmOptionsText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Options.png"))
     Private pntOptionsText As New Point(1207, 410)
-    Private btmOptionsHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\OptionsHover.png"))
+    Private btmOptionsHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\OptionsHover.png"))
     Private pntOptionsHoverText As New Point(1175, 400)
-    Private btmCreditsText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Credits.png"))
+    Private btmCreditsText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Credits.png"))
     Private pntCreditsText As New Point(1352, 536)
-    Private btmCreditsHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\CreditsHover.png"))
+    Private btmCreditsHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\CreditsHover.png"))
     Private pntCreditsHoverText As New Point(1323, 527)
-    Private btmVersusText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\Versus.png"))
+    Private btmVersusText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Versus.png"))
     Private pntVersusText As New Point(284, 71)
-    Private btmVersusHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\Menu\VersusHover.png"))
+    Private btmVersusHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\VersusHover.png"))
     Private pntVersusHoverText As New Point(256, 63)
 
     'Hover
@@ -87,38 +87,95 @@ Public Class frmGame
     Private udcAmbianceSound As clsSound
 
     'General, common uses
-    Private btmBackText As New Bitmap(Image.FromFile(strDirectory & "\Images\General\Back.png"))
+    Private btmBackText As New Bitmap(Image.FromFile(strDirectory & "Images\General\Back.png"))
     Private pntBackText As New Point(1439, 46)
-    Private btmBackHoverText As New Bitmap(Image.FromFile(strDirectory & "\Images\General\BackHover.png"))
+    Private btmBackHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\General\BackHover.png"))
     Private pntBackHoverText As New Point(1418, 35)
 
     'Options screen
-    Private btmOptionsBackground As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\OptionsBackground.jpg"))
-    Private btmResolutionText As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\Resolution.png"))
+    Private btmOptionsBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Options\OptionsBackground.jpg"))
+    Private btmResolutionText As New Bitmap(Image.FromFile(strDirectory & "Images\Options\Resolution.png"))
     Private pntResolutionText As New Point(40, 41)
-    Private btm800x600Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\800x600.png"))
-    Private btmNot800x600Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\not800x600.png"))
+    Private btm800x600Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\800x600.png"))
+    Private btmNot800x600Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\not800x600.png"))
     Private pnt800x600Text As New Point(85, 142)
-    Private btm1024x768Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\1024x768.png"))
-    Private btmNot1024x768Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\not1024x768.png"))
+    Private btm1024x768Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\1024x768.png"))
+    Private btmNot1024x768Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\not1024x768.png"))
     Private pnt1024x768Text As New Point(85, 192)
-    Private btm1280x800Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\1280x800.png"))
-    Private btmNot1280x800Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\not1280x800.png"))
+    Private btm1280x800Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\1280x800.png"))
+    Private btmNot1280x800Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\not1280x800.png"))
     Private pnt1280x800Text As New Point(85, 242)
-    Private btm1280x1024Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\1280x1024.png"))
-    Private btmNot1280x1024Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\not1280x1024.png"))
+    Private btm1280x1024Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\1280x1024.png"))
+    Private btmNot1280x1024Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\not1280x1024.png"))
     Private pnt1280x1024Text As New Point(85, 293)
-    Private btm1440x900Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\1440x900.png"))
-    Private btmNot1440x900Text As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\not1440x900.png"))
+    Private btm1440x900Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\1440x900.png"))
+    Private btmNot1440x900Text As New Bitmap(Image.FromFile(strDirectory & "Images\Options\not1440x900.png"))
     Private pnt1440x900Text As New Point(85, 342)
-    Private btmFullscreenText As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\Fullscreen.png"))
-    Private btmNotFullscreenText As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\notFullscreen.png"))
+    Private btmFullscreenText As New Bitmap(Image.FromFile(strDirectory & "Images\Options\Fullscreen.png"))
+    Private btmNotFullscreenText As New Bitmap(Image.FromFile(strDirectory & "Images\Options\notFullscreen.png"))
     Private pntFullscreenText As New Point(85, 391)
-    Private btmSoundText As New Bitmap(Image.FromFile(strDirectory & "\Images\Options\Sound.png"))
+    Private btmSoundText As New Bitmap(Image.FromFile(strDirectory & "Images\Options\Sound.png"))
     Private pntSoundText As New Point(40, 447)
     Private intResolutionMode As Integer = 0 'Default 800x600
-    Private intFullscreenWidth As Integer = 0 'Means not fullscreen
-    Private intFullscreenHeight As Integer = 0 'Means not fullscreen
+    Private btmSoundBar As New Bitmap(Image.FromFile(strDirectory & "Images\Options\SoundBar.png"))
+    Private pntSoundBar As New Point(84, 547)
+    Private btmSlider As New Bitmap(Image.FromFile(strDirectory & "Images\Options\Slider.png"))
+    Private pntSlider As New Point(658, 533) '100% mark
+    Private blnSliderWithMouseDown As Boolean = False
+    Private btmSoundPercent As New Bitmap(87, 37)
+    Private btmSound(100) As Bitmap '0 to 100
+    Private pntSoundPercent As New Point(718, 553)
+
+    'Loading screen
+    Private btmLoadingBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingBackground.jpg"))
+    Private btmLoadingBar0 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\0.png"))
+    Private btmLoadingBar10 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\10.png"))
+    Private btmLoadingBar20 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\20.png"))
+    Private btmLoadingBar30 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\30.png"))
+    Private btmLoadingBar40 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\40.png"))
+    Private btmLoadingBar50 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\50.png"))
+    Private btmLoadingBar60 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\60.png"))
+    Private btmLoadingBar70 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\70.png"))
+    Private btmLoadingBar80 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\80.png"))
+    Private btmLoadingBar90 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\90.png"))
+    Private btmLoadingBar99 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\99.png")) 'For trolling, Cory wanted it
+    Private btmLoadingBar100 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\100.png"))
+    Private btmLoadingBar As New Bitmap(1613, 134)
+    Private pntLoadingBar As New Point(33, 883)
+    Private btmLoadingText As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingText.png"))
+    Private pntLoadingText As New Point(594, 899)
+    Private btmLoadingStartText As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingStartText.png"))
+    Private pntLoadingStartText As New Point(673, 909)
+    Private btmLoadingParagraph25 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph25.png"))
+    Private btmLoadingParagraph50 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph50.png"))
+    Private btmLoadingParagraph75 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph75.png"))
+    Private btmLoadingParagraph100 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph100.png"))
+    Private btmLoadingParagraph As New Bitmap(1424, 472)
+    Private thrParagraph As System.Threading.Thread
+    Private pntLoadingParagraph As New Point(123, 261)
+    Private thrLoading As System.Threading.Thread
+
+    'Game screen
+    Private btmGameBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\GameBackground.jpg"))
+    Private btmWordBar As New Bitmap(Image.FromFile(strDirectory & "Images\Words\WordBar.png"))
+    Private pntWordBar As New Point(494, 27)
+    Private udcCharacter As clsCharacter
+    Private udcZombies(9) As clsZombie
+
+    'Words
+    Private astrWords() As String 'Used to fill with words
+    Private intWordIndex As Integer = 0
+    Private btmWord As Bitmap 'Defaulted
+    Private pntWord As New Point(0, 0) 'Defaulted
+    Private strTheWord As String = ""
+    Private strWord As String = ""
+    Private btmHorde(5) As Bitmap
+
+    'Highscores screen
+    Private btmHighscoresBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Highscores\HighscoresBackground.jpg"))
+
+    'Credits screen
+    Private btmCreditsBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Credits\CreditsBackground.jpg"))
 
     Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
 
@@ -167,6 +224,14 @@ Public Class frmGame
             Me.DoubleBuffered = True
         End If
 
+        'Load sound file percentages
+        For intLoop As Integer = 0 To btmSound.GetUpperBound(0)
+            btmSound(intLoop) = New Bitmap(Image.FromFile(strDirectory & "Images\Options\Sound" & CStr(intLoop) & ".png"))
+        Next
+
+        'Set 100%
+        btmSoundPercent = btmSound(100)
+
     End Sub
 
     Private Sub frmGame_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
@@ -192,6 +257,48 @@ Public Class frmGame
             End If
         End If
 
+        'Loading
+        If thrLoading IsNot Nothing Then
+            If thrLoading.IsAlive Then
+                thrLoading.Abort()
+            End If
+        End If
+
+        'Paragraphing
+        If thrParagraph IsNot Nothing Then
+            If thrParagraph.IsAlive Then
+                thrParagraph.Abort()
+            End If
+        End If
+
+        'Stop and dispose character
+        RemoveCharacterFromMemory()
+
+        'Stop and dispose zombies
+        RemoveZombiesFromMemory()
+
+    End Sub
+
+    Private Sub RemoveCharacterFromMemory()
+
+        'Stop and dispose character
+        If udcCharacter IsNot Nothing Then
+            udcCharacter.StopAndDispose()
+            udcCharacter = Nothing
+        End If
+
+    End Sub
+
+    Private Sub RemoveZombiesFromMemory()
+
+        'Stop and dispose zombies
+        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+            If udcZombies(intLoop) IsNot Nothing Then
+                udcZombies(intLoop).StopAndDispose()
+                udcZombies(intLoop) = Nothing
+            End If
+        Next
+
     End Sub
 
     Private Sub frmGame_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -210,7 +317,7 @@ Public Class frmGame
             gdblScreenWidthRatio = CDbl((intScreenWidth - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
             gdblScreenHeightRatio = CDbl((intScreenHeight - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
             'Menu sound
-            udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, True) '38 seconds + extra
+            udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
             'Set full screen rectangle
             rectFullScreen = New Rectangle(0, 0, intScreenWidth - WIDTHSUBTRACTION, intScreenHeight - HEIGHTSUBTRACTION) 'Full screen
             'Set for fog
@@ -222,7 +329,85 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub RenderMenuScreen(btmMousedOver As Bitmap)
+    Private Sub Rendering()
+
+        'Notes: Inside a thread, must invoke to reference and use form controls.
+
+        'Loop
+        While True
+            'Paint on canvas first
+            gGraphics = Graphics.FromImage(btmCanvas)
+            'Set graphic options
+            SetDefaultGraphicOptions()
+            'Check mode before painting on canvas
+            Select Case intCanvasMode
+                Case 0 'Menu
+                    RenderMenuScreen()
+                Case 1 'Options screen
+                    RenderOptionsScreen()
+                Case 2 'Play game, loading screen first
+                    LoadingGameScreen()
+                Case 3 'Playing the game
+                    StartedGameScreen()
+                Case 4 'Highscores screen
+                    HighscoresScreen()
+                Case 5 'Credits screen
+                    CreditsScreen()
+            End Select
+            'Select to paint on screen
+            gGraphics = Me.CreateGraphics()
+            'Set graphic options
+            SetDefaultGraphicOptions()
+            'Paint on screen
+            gGraphics.DrawImage(btmCanvas, rectFullScreen)
+            'If changing screen, we must change resolution in this thread or else strange things happen
+            If blnScreenChanged Then
+                'Change window state
+                If intResolutionMode <> 5 Then '5 = fullscreen
+                    'Normal
+                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Normal) 'Prevent cross-threading
+                    'Change
+                    Me.Invoke(Sub() Me.Width = intScreenWidth) 'Prevent cross-threading
+                    Me.Invoke(Sub() Me.Height = intScreenHeight) 'Prevent cross-threading
+                Else
+                    'Force full screen, let windows do stuff for us
+                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Maximized) 'Prevent cross-threading
+                End If
+                'Set
+                gdblScreenWidthRatio = CDbl((Me.Width - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
+                gdblScreenHeightRatio = CDbl((Me.Height - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
+                'Set screen rectangle
+                rectFullScreen.Width = Me.Width - WIDTHSUBTRACTION
+                rectFullScreen.Height = Me.Height - HEIGHTSUBTRACTION
+                'Center the form
+                If intResolutionMode <> 5 Then
+                    Me.Invoke(Sub() Me.Top = CInt((My.Computer.Screen.WorkingArea.Height / 2) - (Me.Height / 2))) 'Prevent cross-threading
+                    Me.Invoke(Sub() Me.Left = CInt((My.Computer.Screen.WorkingArea.Width / 2) - (Me.Width / 2))) 'Prevent cross-threading
+                End If
+                'Reset
+                blnScreenChanged = False
+            End If
+            'Do events
+            Application.DoEvents()
+        End While
+
+    End Sub
+
+    Private Sub SetDefaultGraphicOptions()
+
+        'Set options for fastest rendering
+        With gGraphics
+            .CompositingMode = Drawing2D.CompositingMode.SourceOver
+            .CompositingQuality = Drawing2D.CompositingQuality.HighSpeed
+            .SmoothingMode = Drawing2D.SmoothingMode.None
+            .InterpolationMode = Drawing2D.InterpolationMode.NearestNeighbor
+            .TextRenderingHint = Drawing.Text.TextRenderingHint.SingleBitPerPixel
+            .PixelOffsetMode = Drawing2D.PixelOffsetMode.HighSpeed
+        End With
+
+    End Sub
+
+    Private Sub RenderMenuScreen()
 
         'Draw menu
         gGraphics.DrawImageUnscaled(btmMenuBackground, pntTopLeft)
@@ -239,42 +424,42 @@ Public Class frmGame
         gGraphics.DrawImageUnscaled(btmFogFrontPass2, pntFogFrontPass2)
 
         'Draw start text
-        If btmMousedOver Is btmStartText Then
+        If intCanvasShow = 1 Then
             gGraphics.DrawImageUnscaled(btmStartHoverText, pntStartHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmStartText, pntStartText)
         End If
 
         'Draw highscores text
-        If btmMousedOver Is btmHighscoresText Then
+        If intCanvasShow = 2 Then
             gGraphics.DrawImageUnscaled(btmHighscoresHoverText, pntHighscoresHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmHighscoresText, pntHighscoresText)
         End If
 
         'Draw story text
-        If btmMousedOver Is btmStoryText Then
+        If intCanvasShow = 3 Then
             gGraphics.DrawImageUnscaled(btmStoryHoverText, pntStoryHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmStoryText, pntStoryText)
         End If
 
         'Draw credits text
-        If btmMousedOver Is btmOptionsText Then
+        If intCanvasShow = 4 Then
             gGraphics.DrawImageUnscaled(btmOptionsHoverText, pntOptionsHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmOptionsText, pntOptionsText)
         End If
 
         'Draw options text
-        If btmMousedOver Is btmCreditsText Then
+        If intCanvasShow = 5 Then
             gGraphics.DrawImageUnscaled(btmCreditsHoverText, pntCreditsHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmCreditsText, pntCreditsText)
         End If
 
         'Draw versus text
-        If btmMousedOver Is btmVersusText Then
+        If intCanvasShow = 6 Then
             gGraphics.DrawImageUnscaled(btmVersusHoverText, pntVersusHoverText)
         Else
             gGraphics.DrawImageUnscaled(btmVersusText, pntVersusText)
@@ -285,93 +470,7 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub Rendering()
-
-        'Loop
-        While True
-            'Paint on canvas first
-            gGraphics = Graphics.FromImage(btmCanvas)
-            'Set graphic options
-            SetDefaultGraphicOptions()
-            'Check mode before painting on canvas
-            Select Case intCanvasMode
-                Case 0 'Menu
-                    'Check which to show
-                    Select Case intCanvasShow
-                        Case 0 'Blank no animation
-                            'Render Menu
-                            RenderMenuScreen(Nothing)
-                        Case 1 'Start
-                            'Render Menu
-                            RenderMenuScreen(btmStartText)
-                        Case 2 'Highscores
-                            'Render Menu
-                            RenderMenuScreen(btmHighscoresText)
-                        Case 3 'Story
-                            'Render Menu
-                            RenderMenuScreen(btmStoryText)
-                        Case 4 'Options
-                            'Render Menu
-                            RenderMenuScreen(btmOptionsText)
-                        Case 5 'Credits
-                            'Render Menu
-                            RenderMenuScreen(btmCreditsText)
-                        Case 6 'Versus
-                            'Render Menu
-                            RenderMenuScreen(btmVersusText)
-                    End Select
-                Case 1 'Options screen
-                    'Check which to show
-                    Select Case intCanvasShow
-                        Case 0 'Blank no animation
-                            RenderOptionsScreen(False)
-                        Case 1 'Back button
-                            RenderOptionsScreen(True)
-                    End Select
-            End Select
-            'Select to paint on screen
-            gGraphics = Me.CreateGraphics()
-            'Set graphic options
-            SetDefaultGraphicOptions()
-            'Paint on screen
-            gGraphics.DrawImage(btmCanvas, rectFullScreen)
-            'If changing screen, we must change resolution in this thread or else strange things happen
-            If blnScreenChanged Then
-                'Change window state
-                If intResolutionMode <> 5 Then '5 = fullscreen
-                    'Normal
-                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Normal)
-                    'Change
-                    Me.Invoke(Sub() Me.Width = intScreenWidth)
-                    Me.Invoke(Sub() Me.Height = intScreenHeight)
-                Else
-                    'Force full screen, let windows do stuff for us
-                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Maximized)
-                    'Save width and height
-                    intFullscreenWidth = Me.Width
-                    intFullscreenHeight = Me.Height
-                End If
-                'Set
-                gdblScreenWidthRatio = CDbl((Me.Width - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
-                gdblScreenHeightRatio = CDbl((Me.Height - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
-                'Set screen rectangle
-                rectFullScreen.Width = Me.Width - WIDTHSUBTRACTION
-                rectFullScreen.Height = Me.Height - HEIGHTSUBTRACTION
-                'Center the form
-                If intResolutionMode <> 5 Then
-                    Me.Invoke(Sub() Me.Top = CInt((My.Computer.Screen.WorkingArea.Height / 2) - (Me.Height / 2)))
-                    Me.Invoke(Sub() Me.Left = CInt((My.Computer.Screen.WorkingArea.Width / 2) - (Me.Width / 2)))
-                End If
-                'Reset
-                blnScreenChanged = False
-            End If
-            'Do events
-            Application.DoEvents()
-        End While
-
-    End Sub
-
-    Private Sub RenderOptionsScreen(blnBackButtonSelected As Boolean)
+    Private Sub RenderOptionsScreen()
 
         'Draw options background
         gGraphics.DrawImageUnscaled(btmOptionsBackground, pntTopLeft)
@@ -393,9 +492,18 @@ Public Class frmGame
         CheckResolutionMode(4, btm1440x900Text, btmNot1440x900Text, pnt1440x900Text)
         CheckResolutionMode(5, btmFullscreenText, btmNotFullscreenText, pntFullscreenText)
 
+        'Draw sound bar
+        gGraphics.DrawImageUnscaled(btmSoundBar, pntSoundBar)
+
+        'Draw sound percentage
+        gGraphics.DrawImageUnscaled(btmSoundPercent, pntSoundPercent)
+
+        'Draw slider
+        gGraphics.DrawImageUnscaled(btmSlider, pntSlider)
+
         'Check
-        If blnBackButtonSelected Then
-            'Draw back text
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
             gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
         Else
             'Draw back text
@@ -415,17 +523,87 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub SetDefaultGraphicOptions()
+    Private Sub LoadingGameScreen()
 
-        'Set options for fastest rendering
-        With gGraphics
-            .CompositingMode = Drawing2D.CompositingMode.SourceOver
-            .CompositingQuality = Drawing2D.CompositingQuality.HighSpeed
-            .SmoothingMode = Drawing2D.SmoothingMode.None
-            .InterpolationMode = Drawing2D.InterpolationMode.NearestNeighbor
-            .TextRenderingHint = Drawing.Text.TextRenderingHint.SingleBitPerPixel
-            .PixelOffsetMode = Drawing2D.PixelOffsetMode.HighSpeed
-        End With
+        'Draw loading background
+        gGraphics.DrawImageUnscaled(btmLoadingBackground, pntTopLeft)
+
+        'Draw loading bar
+        gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
+
+        'Draw Loading text
+        If intCanvasShow = 0 Then
+            gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
+        Else
+            gGraphics.DrawImageUnscaled(btmLoadingStartText, pntLoadingStartText)
+        End If
+
+        'Draw paragraph
+        gGraphics.DrawImageUnscaled(btmLoadingParagraph, pntLoadingParagraph)
+
+    End Sub
+
+    Private Sub StartedGameScreen()
+
+        'Draw the background, the armory area
+        gGraphics.DrawImageUnscaled(btmGameBackground, pntTopLeft)
+
+        'Draw word bar
+        gGraphics.DrawImageUnscaled(btmWordBar, pntWordBar)
+
+        'Draw word in the word bar
+        gGraphics.DrawImageUnscaled(btmWord, pntWord)
+
+        'Draw character
+        gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.pntCharacter)
+
+        'Draw zombies
+        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+            If udcZombies(intLoop) IsNot Nothing Then
+                gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+            End If
+        Next
+
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
+
+    End Sub
+
+    Private Sub HighscoresScreen()
+
+        'Draw highscores background
+        gGraphics.DrawImageUnscaled(btmHighscoresBackground, pntTopLeft)
+
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
+
+    End Sub
+
+    Private Sub CreditsScreen()
+
+        'Draw credits background
+        gGraphics.DrawImageUnscaled(btmCreditsBackground, pntTopLeft)
+
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
 
     End Sub
 
@@ -471,23 +649,26 @@ Public Class frmGame
 
     End Function
 
-    Private Function blnMousedOver(pntMouse As Point, intImageWidth As Integer, intImageHeight As Integer, pntStartingPoint As Point,
-                                   intCanvasShowToSet As Integer, blnOnTopOf As Boolean) As Boolean
+    Private Sub HoverText(intCanvasShowToSet As Integer, ByRef blnByRefOnTopOf As Boolean)
 
-        'Check for mouse over
-        If blnMouseInRegion(pntMouse, intImageWidth, intImageHeight, pntStartingPoint) Then
-            'Set canvas show
-            intCanvasShow = intCanvasShowToSet
-            'Set zombie sound only once
-            OnlyPlayZombieMenuSoundOnceThenWait(blnOnTopOf)
-            'Return
-            Return True
-        Else
-            'Return
-            Return False
+        'Set canvas show
+        intCanvasShow = intCanvasShowToSet
+
+        'Check if mouse was on top of button once before
+        If Not blnByRefOnTopOf Then
+            'Set
+            blnByRefOnTopOf = True
+            'Hover sound
+            If thrHoverSoundDelay Is Nothing Then
+                'Play sound
+                Dim udcButtonHoverSound As New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHover.mp3", 3000, gintSoundVolume, False)
+                'Start a waiting thread of 2500 ms
+                thrHoverSoundDelay = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf HoverSoundWaiting))
+                thrHoverSoundDelay.Start()
+            End If
         End If
 
-    End Function
+    End Sub
 
     Private Sub frmGame_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
 
@@ -497,42 +678,45 @@ Public Class frmGame
         Dim pntMouse As Point = Me.PointToClient(MousePosition)
         Static sblnOnTopOf As Boolean = False
 
+        'Print for mouse cordinates if necessary
+        'Debug.Print("Mouse point = " & CStr(pntMouse.X) & ", " & CStr(pntMouse.Y))
+
         'Menu stuff
         If intCanvasMode = 0 Then
 
             'Start has been moused over
-            If blnMousedOver(pntMouse, 212, 69, pntStartText, 1, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 212, 69, pntStartText) Then
+                HoverText(1, sblnOnTopOf)
                 Exit Sub
             End If
 
             'Highscores has been moused over
-            If blnMousedOver(pntMouse, 413, 99, pntHighscoresText, 2, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 413, 99, pntHighscoresText) Then
+                HoverText(2, sblnOnTopOf)
                 Exit Sub
             End If
 
             'Story has been moused over
-            If blnMousedOver(pntMouse, 218, 87, pntStoryText, 3, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 218, 87, pntStoryText) Then
+                HoverText(3, sblnOnTopOf)
                 Exit Sub
             End If
 
             'Options has been moused over
-            If blnMousedOver(pntMouse, 289, 89, pntOptionsText, 4, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 289, 89, pntOptionsText) Then
+                HoverText(4, sblnOnTopOf)
                 Exit Sub
             End If
 
             'Credits has been moused over
-            If blnMousedOver(pntMouse, 285, 78, pntCreditsText, 5, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 285, 78, pntCreditsText) Then
+                HoverText(5, sblnOnTopOf)
                 Exit Sub
             End If
 
             'Versus has been moused over
-            If blnMousedOver(pntMouse, 256, 74, pntVersusText, 6, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 256, 74, pntVersusText) Then
+                HoverText(6, sblnOnTopOf)
                 Exit Sub
             End If
 
@@ -551,8 +735,67 @@ Public Class frmGame
         If intCanvasMode = 1 Then
 
             'Back has been moused over
-            If blnMousedOver(pntMouse, 190, 74, pntBackText, 1, sblnOnTopOf) Then
-                'They moused over, executed code, now exit
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
+                Exit Sub
+            End If
+
+            'Sound changing
+            If blnMouseInRegion(pntMouse, 600, 46, pntSoundBar) And blnSliderWithMouseDown Then 'In the bar
+                If blnSliderWithMouseDown Then
+                    ChangeSoundVolume(pntMouse)
+                End If
+                'Exit
+                Exit Sub
+            End If
+
+            'Reset
+            sblnOnTopOf = False
+
+            'Repaint options background
+            intCanvasShow = 0
+
+        End If
+
+        'Check game screen
+        If intCanvasMode = 3 Then
+
+            'Back has been moused over
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
+                Exit Sub
+            End If
+
+            'Reset
+            sblnOnTopOf = False
+
+            'Repaint options background
+            intCanvasShow = 0
+
+        End If
+
+        'Check highscores screen
+        If intCanvasMode = 4 Then
+
+            'Back has been moused over
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
+                Exit Sub
+            End If
+
+            'Reset
+            sblnOnTopOf = False
+
+            'Repaint options background
+            intCanvasShow = 0
+
+        End If
+
+        If intCanvasMode = 5 Then
+
+            'Back has been moused over
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
                 Exit Sub
             End If
 
@@ -566,29 +809,125 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub OnlyPlayZombieMenuSoundOnceThenWait(ByRef blnByRefOnTopOf As Boolean)
-
-        'Check if mouse was on top of button once before
-        If Not blnByRefOnTopOf Then
-            'Set
-            blnByRefOnTopOf = True
-            'Hover sound
-            If thrHoverSoundDelay Is Nothing Then
-                'Play sound
-                Dim udcButtonHoverSound As New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHover.mp3", 3000)
-                'Start a waiting thread of 2500 ms
-                thrHoverSoundDelay = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf HoverSoundWaiting))
-                thrHoverSoundDelay.Start()
-            End If
-        End If
-
-    End Sub
-
     Private Sub HoverSoundWaiting()
 
         'Sleep for 3000 ms
         System.Threading.Thread.Sleep(3000)
         thrHoverSoundDelay = Nothing
+
+    End Sub
+
+    Private Sub ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(intCanvasModeToSet As Integer, intCanvasShowToSet As Integer)
+
+        'Set
+        intCanvasMode = intCanvasModeToSet
+
+        'Set
+        intCanvasShow = intCanvasShowToSet
+
+        'Play sound
+        Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000, gintSoundVolume, False)
+
+    End Sub
+
+    Private Sub Paragraphing()
+
+        'Set
+        btmLoadingParagraph = btmLoadingParagraph25
+
+        'Sleep
+        System.Threading.Thread.Sleep(333)
+
+        'Set
+        btmLoadingParagraph = btmLoadingParagraph50
+
+        'Sleep
+        System.Threading.Thread.Sleep(333)
+
+        'Set
+        btmLoadingParagraph = btmLoadingParagraph75
+
+        'Sleep
+        System.Threading.Thread.Sleep(333)
+
+        'Set
+        btmLoadingParagraph = btmLoadingParagraph100
+
+    End Sub
+
+    Private Sub LoadingGame()
+
+        'Notes: This procedure is for loading the game to play
+
+        'Set
+        btmLoadingBar = btmLoadingBar0
+
+        'Set
+        btmLoadingBar = btmLoadingBar10
+
+        'Character
+        udcCharacter = New clsCharacter(Me, 100, 325)
+
+        'Set
+        btmLoadingBar = btmLoadingBar20
+
+        'Zombie 1
+        udcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 275)
+
+        'Set
+        btmLoadingBar = btmLoadingBar30
+
+        'Zombie 2
+        udcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 300)
+
+        'Set
+        btmLoadingBar = btmLoadingBar40
+
+        'Zombie 3
+        udcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325)
+
+        'Set
+        btmLoadingBar = btmLoadingBar50
+
+        'Set
+        btmLoadingBar = btmLoadingBar60
+
+        'Set
+        btmLoadingBar = btmLoadingBar70
+
+        'Set
+        btmLoadingBar = btmLoadingBar80
+
+        'Set
+        btmLoadingBar = btmLoadingBar90
+
+        'Set
+        btmLoadingBar = btmLoadingBar99
+
+        'Load all words
+        LoadAllWords()
+
+        'Grab a random word
+        LoadARandomWord()
+
+        'Set
+        btmLoadingBar = btmLoadingBar100
+
+        'Set
+        intCanvasShow = 1 'Means completely loaded
+
+    End Sub
+
+    Private Sub ShowNextScreenAndExitMenu(intCanvasModeToSet As Integer, intCanvasShowToSet As Integer)
+
+        'Stop fog thread
+        thrFog.Abort()
+
+        'Set
+        ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(intCanvasModeToSet, intCanvasShowToSet)
+
+        'Stop sound
+        udcAmbianceSound.StopAndCloseSound()
 
     End Sub
 
@@ -602,17 +941,41 @@ Public Class frmGame
         'If menu
         If intCanvasMode = 0 Then
 
-            'Options was clicked
-            If blnMouseInRegion(pntMouse, 289, 89, pntOptionsText) Then
+            'Start was clicked
+            If blnMouseInRegion(pntMouse, 212, 69, pntStartText) Then
                 'Stop fog thread
                 thrFog.Abort()
                 'Set
-                intCanvasMode = 1
-                intCanvasShow = 0
+                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(2, 0)
                 'Stop sound
                 udcAmbianceSound.StopAndCloseSound()
-                'Play sound
-                Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000)
+                'Start loading game
+                thrLoading = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf LoadingGame))
+                thrLoading.Start()
+                'Start paragraphing
+                thrParagraph = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Paragraphing))
+                thrParagraph.Start()
+                'Exit
+                Exit Sub
+            End If
+
+            'Highscores was clicked
+            If blnMouseInRegion(pntMouse, 413, 99, pntHighscoresText) Then
+                ShowNextScreenAndExitMenu(4, 0)
+                'Exit
+                Exit Sub
+            End If
+
+            'Options was clicked
+            If blnMouseInRegion(pntMouse, 289, 89, pntOptionsText) Then
+                ShowNextScreenAndExitMenu(1, 0)
+                'Exit
+                Exit Sub
+            End If
+
+            'Credits was clicked
+            If blnMouseInRegion(pntMouse, 285, 78, pntCreditsText) Then
+                ShowNextScreenAndExitMenu(5, 0)
                 'Exit
                 Exit Sub
             End If
@@ -627,10 +990,12 @@ Public Class frmGame
 
             'Back was clicked
             If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
-                'Back was pressed
-                BackButtonPressed()
                 'Menu sound
-                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, True) '38 seconds + extra
+                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+                'Set
+                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
+                'Restart fog
+                RestartFog()
                 'Exit
                 Exit Sub
             End If
@@ -683,6 +1048,105 @@ Public Class frmGame
                 Exit Sub
             End If
 
+            'Sound changing
+            If blnMouseInRegion(pntMouse, 600, 46, pntSoundBar) Then 'In the bar
+                ChangeSoundVolume(pntMouse)
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If loading game screen
+        If intCanvasMode = 2 Then
+
+            'Loading start text bar was clicked
+            If intCanvasShow = 1 Then 'If finished loading
+                If blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                    'Set
+                    intCanvasMode = 3
+                    'Set
+                    intCanvasShow = 0
+                    'Start character
+                    udcCharacter.Start()
+                    'Start zombies
+                    For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+                        If udcZombies(intLoop) IsNot Nothing Then
+                            udcZombies(intLoop).Start()
+                        End If
+                    Next
+                    'Exit
+                    Exit Sub
+                End If
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If game screen
+        If intCanvasMode = 3 Then
+
+            'Back was clicked
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Menu sound
+                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+                'Set
+                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
+                'Restart fog
+                RestartFog()
+                'Stop and dispose character
+                RemoveCharacterFromMemory()
+                'Stop and dispose zombies
+                RemoveZombiesFromMemory()
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If highscores screen
+        If intCanvasMode = 4 Then
+
+            'Back was clicked
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Menu sound
+                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+                'Set
+                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
+                'Restart fog
+                RestartFog()
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If credits screen
+        If intCanvasMode = 5 Then
+
+            'Back was clicked
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Menu sound
+                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+                'Set
+                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
+                'Restart fog
+                RestartFog()
+                'Exit
+                Exit Sub
+            End If
+
             'Exit
             Exit Sub
 
@@ -690,17 +1154,49 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub BackButtonPressed()
+    Private Sub ChangeSoundVolume(pntMouse As Point)
 
-        'Set
-        intCanvasMode = 0
-        intCanvasShow = 0
+        'Declare
+        Dim intMousePointCalculation As Integer = 0
 
-        'Play sound
-        Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000)
+        'Move slider
+        Select Case intResolutionMode
+            Case 0 'Max 39 to 319 pntMouse
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) - 12 '12 Adjustment for pixels
+            Case 1
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) - 10 '10 Adjustment for pixels
+            Case 2
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) - 8 '8 Adjustment for pixels
+            Case 3
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) - 6 '6 Adjustment for pixels
+            Case 4
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) - 4 '4 Adjustment for pixels
+            Case 5
+                intMousePointCalculation = CInt((pntMouse.X / gdblScreenWidthRatio) - ((53 / 2) * gdblScreenWidthRatio)) 'No adjustment for pixels screen is wider than normal
+        End Select
 
-        'Restart fog
-        RestartFog()
+        'If close just make it marked as that number, mouse cordinates vary by screen resolution, 57 to 659 is what we can get when tested, let's have only 58 to 657
+        If intMousePointCalculation <= 61 Then
+            intMousePointCalculation = 58
+        End If
+        If intMousePointCalculation >= 654 Then
+            intMousePointCalculation = 657
+        End If
+
+        'Set point for the slider
+        pntSlider.X = intMousePointCalculation
+
+        'Set volume
+        If pntSlider.X = 58 Then
+            gintSoundVolume = 0
+            btmSoundPercent = btmSound(0)
+        ElseIf pntSlider.X = 657 Then
+            gintSoundVolume = 1000
+            btmSoundPercent = btmSound(100)
+        Else
+            gintSoundVolume = CInt((pntSlider.X - 58) * (1000 / 600)) '58 to 657 = 600 pixel bounds, inclusive of 58 as a number.
+            btmSoundPercent = btmSound(CInt(gintSoundVolume / 10))
+        End If
 
     End Sub
 
@@ -731,6 +1227,130 @@ Public Class frmGame
         'Set for fog
         thrFog = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf KeepFogMoving))
         thrFog.Start()
+
+    End Sub
+
+    Private Sub frmGame_MouseDown(sender As Object, e As MouseEventArgs) Handles Me.MouseDown
+
+        'Declare
+        Dim pntMouse As Point = Me.PointToClient(MousePosition)
+
+        'If options
+        If intCanvasMode = 1 Then
+
+            'Sound changing
+            If blnMouseInRegion(pntMouse, 600, 46, pntSoundBar) Then 'In the bar
+                blnSliderWithMouseDown = True
+            End If
+
+        End If
+
+    End Sub
+
+    Private Sub frmGame_MouseUp(sender As Object, e As MouseEventArgs) Handles Me.MouseUp
+
+        'If options
+        If intCanvasMode = 1 Then
+
+            'Sound changing
+            blnSliderWithMouseDown = False
+
+        End If
+
+    End Sub
+
+    Private Sub frmGame_KeyPress(sender As Object, e As KeyPressEventArgs) Handles Me.KeyPress
+
+        'Check if playing game
+        If intCanvasMode = 3 Then
+
+            'Check the word being typed
+            If strWord.Substring(0, 1) = LCase(e.KeyChar) Or strWord.Substring(0, 1) = UCase(e.KeyChar) Then
+                'Change word by one less letter
+                strWord = strWord.Substring(1)
+                'Increase
+                intWordIndex += 1
+                'Check if word is done
+                If Len(strWord) = 0 Then
+                    'Get a new word
+                    LoadARandomWord()
+                    'Character shoots
+                    udcCharacter.CharacterShot()
+                    'Kill closest zombie
+                    'Dim intIndex As Integer = intGetIndexOfClosestZombie()
+                    'udcZombies(intIndex).Dead()
+                Else
+                    'Show to screen
+                    btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
+                              strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
+                End If
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+    End Sub
+
+    Private Function intGetIndexOfClosestZombie() As Integer
+
+        'Declare
+        Dim intClosestX As Integer = ORIGINALSCREENWIDTH
+        Dim intIndex As Integer = 0
+
+        'Loop to get closest zombie
+        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+            If udcZombies(intLoop) IsNot Nothing Then
+                If intClosestX < udcZombies(intLoop).pntZombie.Y Then
+                    intClosestX = udcZombies(intLoop).pntZombie.Y
+                    intIndex = intLoop
+                End If
+            End If
+        Next
+
+        'Return
+        Return intIndex
+
+    End Function
+
+    Private Sub LoadAllWords()
+
+        'Declare
+        Dim intLoop As Integer = 0
+
+        'Load each word, get all folders in the word directory
+        For Each strDirectoryWord As String In System.IO.Directory.GetDirectories(strDirectory & "Images\Words")
+            'Declare
+            Dim sdiDirectory As New System.IO.DirectoryInfo(strDirectoryWord)
+            'Redim
+            ReDim Preserve astrWords(intLoop)
+            astrWords(intLoop) = sdiDirectory.Name
+            'Increase
+            intLoop += 1
+        Next
+
+    End Sub
+
+    Private Sub LoadARandomWord()
+
+        'Declare
+        Dim rndNumber As New Random
+        strTheWord = astrWords(rndNumber.Next(0, astrWords.GetUpperBound(0) + 1))
+        strWord = strTheWord
+
+        'Set
+        intWordIndex = 0
+
+        'Set the point for the word
+        If Len(strTheWord) = 4 Or Len(strTheWord) = 5 Then
+            pntWord.X = 725
+            pntWord.Y = 93
+        End If
+
+        'Set bitmap of the word
+        btmWord = New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
+                  strTheWord.Substring(1) & "\0.png"))
 
     End Sub
 

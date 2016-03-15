@@ -22,7 +22,7 @@ Public Class clsSound
     Private Delegate Sub PlaySoundDelegate()
     Private Delegate Sub ClosingSoundDelegate(sender As Object, e As System.Timers.ElapsedEventArgs)
 
-    Public Sub New(frmToPass As Form, strDirectory As String, intLengthOfFile As Integer, Optional blnRepeat As Boolean = False, Optional intVolume As Integer = 1000)
+    Public Sub New(frmToPass As Form, strDirectory As String, intLengthOfFile As Integer, intVolume As Integer, Optional blnRepeat As Boolean = False)
 
         'Notes: Must pass a form and length of file, the length is the duration time, make sure to pass more than necessary, example: 00:02 seconds pass 3000 instead of 2000
 
@@ -65,9 +65,7 @@ Public Class clsSound
         End If
 
         'Check for volume
-        If intVolume <> 1000 Then
-            intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0)
-        End If
+        intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0)
 
     End Sub
 
