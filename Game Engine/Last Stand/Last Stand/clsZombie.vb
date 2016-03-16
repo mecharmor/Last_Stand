@@ -23,8 +23,9 @@ Public Class clsZombie
 
     'Death
     Private blnAlive As Boolean = True
+    Private blnPaintOnBackgroundAfterDead As Boolean = False
 
-    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, Optional blnStart As Boolean = False, Optional intSpeed As Integer = 0)
+    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, Optional blnStart As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
@@ -33,11 +34,7 @@ Public Class clsZombie
         btmZombie = gbtmZombieWalk1
 
         'Set
-        If intSpeed = 0 Then
-            _intSpeed = 25 'To make standard
-        Else
-            _intSpeed = intSpeed
-        End If
+        _intSpeed = intSpeed
 
         'Set
         intSpotX = intSpawnX
@@ -45,7 +42,7 @@ Public Class clsZombie
         pntZombie = New Point(intSpotX, intSpotY)
 
         'Set frame timer
-        sttTimer = New System.Timers.Timer(300)
+        sttTimer = New System.Timers.Timer(200) 'For walking
         AddHandler sttTimer.Elapsed, AddressOf Animating
 
         'Start
@@ -101,7 +98,7 @@ Public Class clsZombie
                         blnSwitch = False
                 End Select
             End If
-        Else 'Interval is 75 in this area
+        Else 'Interval is 150 in this area
             'Check frame
             Select Case intFrame
                 Case 1
@@ -120,11 +117,22 @@ Public Class clsZombie
                     btmZombie = gbtmZombieDeath6
                     'Stop timer and handler
                     StopAndDispose()
+                    'Paint on top of the background
+                    blnPaintOnBackgroundAfterDead = True
             End Select
 
         End If
 
     End Sub
+
+    Public ReadOnly Property PaintOnBackgroundAfterDead() As Boolean
+
+        'Return if ready to paint after death
+        Get
+            Return blnPaintOnBackgroundAfterDead
+        End Get
+
+    End Property
 
     Public ReadOnly Property IsAlive() As Boolean
 
@@ -139,7 +147,7 @@ Public Class clsZombie
 
         'Stop timer and change interval
         sttTimer.Enabled = False
-        sttTimer.Interval = 75
+        sttTimer.Interval = 150
 
         'Set dead
         blnAlive = False
@@ -148,8 +156,12 @@ Public Class clsZombie
         intFrame = 1
         btmZombie = gbtmZombieDeath1
 
+        'Declare
+        Dim rndNumber As New Random
+
         'Play sound of death
-        Dim udcDeathSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "/Sounds/ZombieDeath1.mp3", 2000, gintSoundVolume)
+        Dim udcDeathSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "/Sounds/ZombieDeath" & CStr(rndNumber.Next(1, 4)) &
+                                          ".mp3", 2000, gintSoundVolume)
 
         'Start timer again
         sttTimer.Enabled = True

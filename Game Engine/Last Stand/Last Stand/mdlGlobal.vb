@@ -16,8 +16,8 @@ Module mdlGlobal
     'Character
     Public gbtmCharacterStand1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Standing/1.png"))
     Public gbtmCharacterStand2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Standing/2.png"))
-    Public gbtmCharacterShoot1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Shoot Once/3.png"))
-    Public gbtmCharacterShoot2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Shoot Once/4.png"))
+    Public gbtmCharacterShoot1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Shoot Once/1.png"))
+    Public gbtmCharacterShoot2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Character/Shoot Once/2.png"))
 
     'Zombies
     Public gbtmZombieWalk1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Movement/1.png"))

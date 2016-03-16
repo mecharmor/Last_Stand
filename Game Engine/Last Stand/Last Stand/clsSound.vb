@@ -30,7 +30,7 @@ Public Class clsSound
         intCounter = gintAlias + 1
 
         'Increase counter or start it over
-        If gintAlias + 1 >= 50000 Then
+        If gintAlias + 1 = Integer.MaxValue Then
             gintAlias = 0
         Else
             gintAlias += 1

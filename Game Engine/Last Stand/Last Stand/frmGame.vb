@@ -156,17 +156,19 @@ Public Class frmGame
     Private thrLoading As System.Threading.Thread
 
     'Game screen
-    Private btmGameBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\GameBackground.jpg"))
+    Private btmGameBackground As Bitmap
     Private btmWordBar As New Bitmap(Image.FromFile(strDirectory & "Images\Words\WordBar.png"))
     Private pntWordBar As New Point(494, 27)
     Private udcCharacter As clsCharacter
-    Private udcZombies(9) As clsZombie
+    Private udcZombies(4) As clsZombie
+    Private intZombieSpeed As Integer = 0 'Defaulted for now as nothing
+    Private blnBackFromGame As Boolean = False
 
     'Words
     Private astrWords() As String 'Used to fill with words
     Private intWordIndex As Integer = 0
     Private btmWord As Bitmap 'Defaulted
-    Private pntWord As New Point(0, 0) 'Defaulted
+    Private pntWord As New Point(725, 85)
     Private strTheWord As String = ""
     Private strWord As String = ""
     Private btmHorde(5) As Bitmap
@@ -271,25 +273,18 @@ Public Class frmGame
             End If
         End If
 
-        'Stop and dispose character
-        RemoveCharacterFromMemory()
-
-        'Stop and dispose zombies
-        RemoveZombiesFromMemory()
+        'Stop and dispose character and zombies
+        RemoveCharacterAndZombiesFromMemory()
 
     End Sub
 
-    Private Sub RemoveCharacterFromMemory()
+    Private Sub RemoveCharacterAndZombiesFromMemory()
 
         'Stop and dispose character
         If udcCharacter IsNot Nothing Then
             udcCharacter.StopAndDispose()
             udcCharacter = Nothing
         End If
-
-    End Sub
-
-    Private Sub RemoveZombiesFromMemory()
 
         'Stop and dispose zombies
         For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
@@ -331,14 +326,15 @@ Public Class frmGame
 
     Private Sub Rendering()
 
-        'Notes: Inside a thread, must invoke to reference and use form controls.
-
         'Loop
         While True
-            'Paint on canvas first
-            gGraphics = Graphics.FromImage(btmCanvas)
-            'Set graphic options
-            SetDefaultGraphicOptions()
+            'Empty variables if back from game
+            If blnBackFromGame Then
+                'Stop and dispose character and zombies
+                RemoveCharacterAndZombiesFromMemory()
+                'Set
+                blnBackFromGame = False
+            End If
             'Check mode before painting on canvas
             Select Case intCanvasMode
                 Case 0 'Menu
@@ -361,35 +357,20 @@ Public Class frmGame
             'Paint on screen
             gGraphics.DrawImage(btmCanvas, rectFullScreen)
             'If changing screen, we must change resolution in this thread or else strange things happen
-            If blnScreenChanged Then
-                'Change window state
-                If intResolutionMode <> 5 Then '5 = fullscreen
-                    'Normal
-                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Normal) 'Prevent cross-threading
-                    'Change
-                    Me.Invoke(Sub() Me.Width = intScreenWidth) 'Prevent cross-threading
-                    Me.Invoke(Sub() Me.Height = intScreenHeight) 'Prevent cross-threading
-                Else
-                    'Force full screen, let windows do stuff for us
-                    Me.Invoke(Sub() Me.WindowState = FormWindowState.Maximized) 'Prevent cross-threading
-                End If
-                'Set
-                gdblScreenWidthRatio = CDbl((Me.Width - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
-                gdblScreenHeightRatio = CDbl((Me.Height - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
-                'Set screen rectangle
-                rectFullScreen.Width = Me.Width - WIDTHSUBTRACTION
-                rectFullScreen.Height = Me.Height - HEIGHTSUBTRACTION
-                'Center the form
-                If intResolutionMode <> 5 Then
-                    Me.Invoke(Sub() Me.Top = CInt((My.Computer.Screen.WorkingArea.Height / 2) - (Me.Height / 2))) 'Prevent cross-threading
-                    Me.Invoke(Sub() Me.Left = CInt((My.Computer.Screen.WorkingArea.Width / 2) - (Me.Width / 2))) 'Prevent cross-threading
-                End If
-                'Reset
-                blnScreenChanged = False
-            End If
+            ScreenResolutionChanged()
             'Do events
             Application.DoEvents()
         End While
+
+    End Sub
+
+    Private Sub PaintOnCanvas()
+
+        'Paint on canvas
+        gGraphics = Graphics.FromImage(btmCanvas)
+
+        'Set graphic options
+        SetDefaultGraphicOptions()
 
     End Sub
 
@@ -408,6 +389,9 @@ Public Class frmGame
     End Sub
 
     Private Sub RenderMenuScreen()
+
+        'Paint on canvas
+        PaintOnCanvas()
 
         'Draw menu
         gGraphics.DrawImageUnscaled(btmMenuBackground, pntTopLeft)
@@ -472,6 +456,9 @@ Public Class frmGame
 
     Private Sub RenderOptionsScreen()
 
+        'Paint on canvas
+        PaintOnCanvas()
+
         'Draw options background
         gGraphics.DrawImageUnscaled(btmOptionsBackground, pntTopLeft)
 
@@ -525,6 +512,9 @@ Public Class frmGame
 
     Private Sub LoadingGameScreen()
 
+        'Paint on canvas
+        PaintOnCanvas()
+
         'Draw loading background
         gGraphics.DrawImageUnscaled(btmLoadingBackground, pntTopLeft)
 
@@ -532,7 +522,7 @@ Public Class frmGame
         gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
 
         'Draw Loading text
-        If intCanvasShow = 0 Then
+        If intCanvasShow = 0 And intCanvasMode = 2 Then 'Have to check for both because at some point the rendering will glitch if not checked
             gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
         Else
             gGraphics.DrawImageUnscaled(btmLoadingStartText, pntLoadingStartText)
@@ -544,6 +534,28 @@ Public Class frmGame
     End Sub
 
     Private Sub StartedGameScreen()
+
+        'Move graphics to copy and print dead first
+        gGraphics = Graphics.FromImage(btmGameBackground)
+        'Set graphic options
+        SetDefaultGraphicOptions()
+
+        'Draw dead zombies permanently
+        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+            If udcZombies(intLoop) IsNot Nothing Then
+                If udcZombies(intLoop).PaintOnBackgroundAfterDead Then
+                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+                    'Increase speed
+                    intZombieSpeed += 1
+                    'Create a new zombie
+                    udcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
+                    udcZombies(intLoop).Start()
+                End If
+            End If
+        Next
+
+        'Paint on canvas
+        PaintOnCanvas()
 
         'Draw the background, the armory area
         gGraphics.DrawImageUnscaled(btmGameBackground, pntTopLeft)
@@ -560,7 +572,9 @@ Public Class frmGame
         'Draw zombies
         For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
             If udcZombies(intLoop) IsNot Nothing Then
-                gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+                If Not udcZombies(intLoop).PaintOnBackgroundAfterDead Then
+                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+                End If
             End If
         Next
 
@@ -576,6 +590,9 @@ Public Class frmGame
     End Sub
 
     Private Sub HighscoresScreen()
+
+        'Paint on canvas
+        PaintOnCanvas()
 
         'Draw highscores background
         gGraphics.DrawImageUnscaled(btmHighscoresBackground, pntTopLeft)
@@ -593,6 +610,9 @@ Public Class frmGame
 
     Private Sub CreditsScreen()
 
+        'Paint on canvas
+        PaintOnCanvas()
+
         'Draw credits background
         gGraphics.DrawImageUnscaled(btmCreditsBackground, pntTopLeft)
 
@@ -603,6 +623,38 @@ Public Class frmGame
         Else
             'Draw back text
             gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
+
+    End Sub
+
+    Private Sub ScreenResolutionChanged()
+
+        'Change resolution if it does need to be changed
+        If blnScreenChanged Then
+            'Change window state
+            If intResolutionMode <> 5 Then '5 = fullscreen
+                'Normal
+                Me.Invoke(Sub() Me.WindowState = FormWindowState.Normal) 'Prevent cross-threading
+                'Change
+                Me.Invoke(Sub() Me.Width = intScreenWidth) 'Prevent cross-threading
+                Me.Invoke(Sub() Me.Height = intScreenHeight) 'Prevent cross-threading
+            Else
+                'Force full screen, let windows do stuff for us
+                Me.Invoke(Sub() Me.WindowState = FormWindowState.Maximized) 'Prevent cross-threading
+            End If
+            'Set
+            gdblScreenWidthRatio = CDbl((Me.Width - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
+            gdblScreenHeightRatio = CDbl((Me.Height - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
+            'Set screen rectangle
+            rectFullScreen.Width = Me.Width - WIDTHSUBTRACTION
+            rectFullScreen.Height = Me.Height - HEIGHTSUBTRACTION
+            'Center the form
+            If intResolutionMode <> 5 Then
+                Me.Invoke(Sub() Me.Top = CInt((My.Computer.Screen.WorkingArea.Height / 2) - (Me.Height / 2))) 'Prevent cross-threading
+                Me.Invoke(Sub() Me.Left = CInt((My.Computer.Screen.WorkingArea.Width / 2) - (Me.Width / 2))) 'Prevent cross-threading
+            End If
+            'Reset
+            blnScreenChanged = False
         End If
 
     End Sub
@@ -865,32 +917,44 @@ Public Class frmGame
         'Set
         btmLoadingBar = btmLoadingBar10
 
+        'Set to be fresh
+        btmGameBackground = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\GameBackground.jpg"))
+
         'Character
         udcCharacter = New clsCharacter(Me, 100, 325)
 
         'Set
         btmLoadingBar = btmLoadingBar20
 
+        'Set zombie speed
+        intZombieSpeed = 25
+
         'Zombie 1
-        udcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 275)
+        udcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar30
 
         'Zombie 2
-        udcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 300)
+        udcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar40
 
         'Zombie 3
-        udcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325)
+        udcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar50
 
+        'Zombie 4
+        udcZombies(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeed)
+
         'Set
         btmLoadingBar = btmLoadingBar60
+
+        'Zombie 5
+        udcZombies(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar70
@@ -1097,12 +1161,10 @@ Public Class frmGame
                 udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
                 'Set
                 ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
+                'Set
+                blnBackFromGame = True
                 'Restart fog
                 RestartFog()
-                'Stop and dispose character
-                RemoveCharacterFromMemory()
-                'Stop and dispose zombies
-                RemoveZombiesFromMemory()
                 'Exit
                 Exit Sub
             End If
@@ -1277,8 +1339,10 @@ Public Class frmGame
                     'Character shoots
                     udcCharacter.CharacterShot()
                     'Kill closest zombie
-                    'Dim intIndex As Integer = intGetIndexOfClosestZombie()
-                    'udcZombies(intIndex).Dead()
+                    Dim intIndex As Integer = intGetIndexOfClosestZombie() 'If returns too high, means player typed too good, shoot nothing
+                    If intIndex <> udcZombies.GetUpperBound(0) + 1 Then
+                        udcZombies(intIndex).Dead()
+                    End If
                 Else
                     'Show to screen
                     btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
@@ -1296,15 +1360,17 @@ Public Class frmGame
     Private Function intGetIndexOfClosestZombie() As Integer
 
         'Declare
-        Dim intClosestX As Integer = ORIGINALSCREENWIDTH
-        Dim intIndex As Integer = 0
+        Dim intClosestX As Integer = Integer.MaxValue
+        Dim intIndex As Integer = udcZombies.GetUpperBound(0) + 1
 
         'Loop to get closest zombie
         For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
             If udcZombies(intLoop) IsNot Nothing Then
-                If intClosestX < udcZombies(intLoop).pntZombie.Y Then
-                    intClosestX = udcZombies(intLoop).pntZombie.Y
-                    intIndex = intLoop
+                If udcZombies(intLoop).IsAlive Then
+                    If intClosestX > udcZombies(intLoop).pntZombie.X Then
+                        intClosestX = udcZombies(intLoop).pntZombie.X
+                        intIndex = intLoop
+                    End If
                 End If
             End If
         Next
@@ -1341,12 +1407,6 @@ Public Class frmGame
 
         'Set
         intWordIndex = 0
-
-        'Set the point for the word
-        If Len(strTheWord) = 4 Or Len(strTheWord) = 5 Then
-            pntWord.X = 725
-            pntWord.Y = 93
-        End If
 
         'Set bitmap of the word
         btmWord = New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
