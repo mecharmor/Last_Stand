@@ -30,5 +30,7 @@ Module mdlGlobal
     Public gbtmZombieDeath4 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Death/4.png"))
     Public gbtmZombieDeath5 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Death/5.png"))
     Public gbtmZombieDeath6 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Death/6.png"))
+    Public gbtmZombiePin1 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Pinning/1.png"))
+    Public gbtmZombiePin2 As New Bitmap(Image.FromFile(AppDomain.CurrentDomain.BaseDirectory & "Images/Zombies/Generic/Pinning/2.png"))
 
 End Module

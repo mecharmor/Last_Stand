@@ -17,6 +17,7 @@ Public Class frmGame
     Private Const HEIGHTSUBTRACTION As Integer = 38 'Probably the edges of the window
     Private Const FOGMAXSPEED As Integer = 25
     Private Const FOGMAXDELAY As Integer = 100
+    Private Const ENDGAMEDELAYBLACKSCREEN As Integer = 250
 
     'Declare beginning necessary engine needs
     Private intScreenWidth As Integer = 800
@@ -53,6 +54,7 @@ Public Class frmGame
     Private pntArcher As New Point(117, 0)
     Private btmLastStandText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\LastStand.png"))
     Private pntLastStandText As New Point(147, 833)
+    Private udcAmbianceSound As clsSound
 
     'Menu buttons
     Private btmStartText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Start.png"))
@@ -79,12 +81,7 @@ Public Class frmGame
     Private pntVersusText As New Point(284, 71)
     Private btmVersusHoverText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\VersusHover.png"))
     Private pntVersusHoverText As New Point(256, 63)
-
-    'Hover
     Private thrHoverSoundDelay As System.Threading.Thread
-
-    'Sound
-    Private udcAmbianceSound As clsSound
 
     'General, common uses
     Private btmBackText As New Bitmap(Image.FromFile(strDirectory & "Images\General\Back.png"))
@@ -157,21 +154,29 @@ Public Class frmGame
 
     'Game screen
     Private btmGameBackground As Bitmap
+    Private btmEndGame25 As Bitmap
+    Private btmEndGame50 As Bitmap
+    Private btmEndGame75 As Bitmap
+    Private btmEndGame100 As Bitmap
+    Private btmEndGame As Bitmap
+    Private thrEndGame As System.Threading.Thread
     Private btmWordBar As New Bitmap(Image.FromFile(strDirectory & "Images\Words\WordBar.png"))
-    Private pntWordBar As New Point(494, 27)
+    Private pntWordBar As New Point(482, 27)
     Private udcCharacter As clsCharacter
     Private udcZombies(4) As clsZombie
     Private intZombieSpeed As Integer = 0 'Defaulted for now as nothing
     Private blnBackFromGame As Boolean = False
+    Private blnGameOverFirstTime As Boolean = False
+    Private udcGameAmbiance As clsSound
+    Private blnEndingGameCantType As Boolean = False
 
     'Words
     Private astrWords() As String 'Used to fill with words
     Private intWordIndex As Integer = 0
     Private btmWord As Bitmap 'Defaulted
-    Private pntWord As New Point(725, 85)
+    Private pntWord As New Point(484, 65)
     Private strTheWord As String = ""
     Private strWord As String = ""
-    Private btmHorde(5) As Bitmap
 
     'Highscores screen
     Private btmHighscoresBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Highscores\HighscoresBackground.jpg"))
@@ -270,6 +275,13 @@ Public Class frmGame
         If thrParagraph IsNot Nothing Then
             If thrParagraph.IsAlive Then
                 thrParagraph.Abort()
+            End If
+        End If
+
+        'Ending game
+        If thrEndGame IsNot Nothing Then
+            If thrEndGame.IsAlive Then
+                thrEndGame.Abort()
             End If
         End If
 
@@ -569,14 +581,46 @@ Public Class frmGame
         'Draw character
         gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.pntCharacter)
 
-        'Draw zombies
+        'Draw zombies pinning
         For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
             If udcZombies(intLoop) IsNot Nothing Then
-                If Not udcZombies(intLoop).PaintOnBackgroundAfterDead Then
+                'Check distance
+                If udcZombies(intLoop).pntZombie.X <= 200 And Not udcZombies(intLoop).IsPinning Then
+                    'Set
+                    udcZombies(intLoop).Pin() 'Pinning character
+                    'Character dying sound
+                    If blnGameOverFirstTime Then
+                        'Play
+                        Dim udcScreamSound As New clsSound(Me, strDirectory & "Sounds\CharacterDying.mp3", 3000, gintSoundVolume, False)
+                        'Set
+                        thrEndGame = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf EndingGame))
+                        thrEndGame.Start()
+                        'Set
+                        blnGameOverFirstTime = False
+                        'Set
+                        blnEndingGameCantType = True
+                    End If
+                End If
+                'Paint if pinning
+                If udcZombies(intLoop).IsPinning And udcZombies(intLoop).IsAlive Then
                     gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
                 End If
             End If
         Next
+
+        'Draw zombies walking
+        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
+            If udcZombies(intLoop) IsNot Nothing Then
+                If Not udcZombies(intLoop).PaintOnBackgroundAfterDead And Not udcZombies(intLoop).IsPinning Then
+                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+                End If
+            End If
+        Next
+
+        'If game over
+        If btmEndGame IsNot Nothing Then
+            gGraphics.DrawImageUnscaled(btmEndGame, pntTopLeft)
+        End If
 
         'Back button
         If intCanvasShow = 1 Then
@@ -586,6 +630,31 @@ Public Class frmGame
             'Draw back text
             gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
         End If
+
+    End Sub
+
+    Private Sub EndingGame()
+
+        'Set
+        btmEndGame = btmEndGame25
+
+        'Wait
+        System.Threading.Thread.Sleep(ENDGAMEDELAYBLACKSCREEN)
+
+        'Set
+        btmEndGame = btmEndGame50
+
+        'Wait
+        System.Threading.Thread.Sleep(ENDGAMEDELAYBLACKSCREEN)
+
+        'Set
+        btmEndGame = btmEndGame75
+
+        'Wait
+        System.Threading.Thread.Sleep(ENDGAMEDELAYBLACKSCREEN)
+
+        'Set
+        btmEndGame = btmEndGame100
 
     End Sub
 
@@ -713,7 +782,7 @@ Public Class frmGame
             'Hover sound
             If thrHoverSoundDelay Is Nothing Then
                 'Play sound
-                Dim udcButtonHoverSound As New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\ButtonHover.mp3", 3000, gintSoundVolume, False)
+                Dim udcButtonHoverSound As New clsSound(Me, strDirectory & "Sounds\ButtonHover.mp3", 3000, gintSoundVolume, False)
                 'Start a waiting thread of 2500 ms
                 thrHoverSoundDelay = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf HoverSoundWaiting))
                 thrHoverSoundDelay.Start()
@@ -917,6 +986,15 @@ Public Class frmGame
         'Set
         btmLoadingBar = btmLoadingBar10
 
+        'Set
+        btmEndGame = Nothing
+
+        'Set
+        blnEndingGameCantType = False
+
+        'Set
+        blnGameOverFirstTime = True
+
         'Set to be fresh
         btmGameBackground = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\GameBackground.jpg"))
 
@@ -961,6 +1039,12 @@ Public Class frmGame
 
         'Set
         btmLoadingBar = btmLoadingBar80
+
+        'Set
+        btmEndGame25 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame25.png"))
+        btmEndGame50 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame50.png"))
+        btmEndGame75 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame75.png"))
+        btmEndGame100 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame100.png"))
 
         'Set
         btmLoadingBar = btmLoadingBar90
@@ -1130,6 +1214,8 @@ Public Class frmGame
             'Loading start text bar was clicked
             If intCanvasShow = 1 Then 'If finished loading
                 If blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                    'Play ambiance sound
+                    udcGameAmbiance = New clsSound(Me, strDirectory & "\Sounds\HellAmbiance.mp3", 36000, gintSoundVolume, True)
                     'Set
                     intCanvasMode = 3
                     'Set
@@ -1157,12 +1243,20 @@ Public Class frmGame
 
             'Back was clicked
             If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Stop sound
+                udcGameAmbiance.StopAndCloseSound()
                 'Menu sound
                 udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
                 'Set
                 ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
                 'Set
                 blnBackFromGame = True
+                'Abort
+                If thrEndGame IsNot Nothing Then
+                    If thrEndGame.IsAlive Then
+                        thrEndGame.Abort()
+                    End If
+                End If
                 'Restart fog
                 RestartFog()
                 'Exit
@@ -1327,26 +1421,28 @@ Public Class frmGame
         If intCanvasMode = 3 Then
 
             'Check the word being typed
-            If strWord.Substring(0, 1) = LCase(e.KeyChar) Or strWord.Substring(0, 1) = UCase(e.KeyChar) Then
-                'Change word by one less letter
-                strWord = strWord.Substring(1)
-                'Increase
-                intWordIndex += 1
-                'Check if word is done
-                If Len(strWord) = 0 Then
-                    'Get a new word
-                    LoadARandomWord()
-                    'Character shoots
-                    udcCharacter.CharacterShot()
-                    'Kill closest zombie
-                    Dim intIndex As Integer = intGetIndexOfClosestZombie() 'If returns too high, means player typed too good, shoot nothing
-                    If intIndex <> udcZombies.GetUpperBound(0) + 1 Then
-                        udcZombies(intIndex).Dead()
+            If Not blnEndingGameCantType Then
+                If strWord.Substring(0, 1) = LCase(e.KeyChar) Or strWord.Substring(0, 1) = UCase(e.KeyChar) Then
+                    'Change word by one less letter
+                    strWord = strWord.Substring(1)
+                    'Increase
+                    intWordIndex += 1
+                    'Check if word is done
+                    If Len(strWord) = 0 Then
+                        'Get a new word
+                        LoadARandomWord()
+                        'Character shoots
+                        udcCharacter.CharacterShot()
+                        'Kill closest zombie
+                        Dim intIndex As Integer = intGetIndexOfClosestZombie() 'If returns too high, means player typed too good, shoot nothing
+                        If intIndex <> udcZombies.GetUpperBound(0) + 1 Then
+                            udcZombies(intIndex).Dead()
+                        End If
+                    Else
+                        'Show to screen
+                        btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
+                                  strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
                     End If
-                Else
-                    'Show to screen
-                    btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
-                              strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
                 End If
             End If
 
