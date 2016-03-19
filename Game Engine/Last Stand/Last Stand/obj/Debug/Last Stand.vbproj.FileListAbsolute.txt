@@ -28,3 +28,13 @@ F:\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.xml
 F:\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.frmGame.resources
 F:\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.resources
 F:\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe.config
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.exe
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.xml
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.pdb
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.pdb
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.xml
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.frmGame.resources
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.resources
+F:\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache
