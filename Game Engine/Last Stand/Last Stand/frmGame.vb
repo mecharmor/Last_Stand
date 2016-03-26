@@ -17,6 +17,7 @@ Public Class frmGame
     Private Const HEIGHTSUBTRACTION As Integer = 38 'Probably the edges of the window
     Private Const FOGMAXSPEED As Integer = 25
     Private Const FOGMAXDELAY As Integer = 100
+    Private Const LOADINGPARAGRAPHDELAY As Integer = 333
     Private Const ENDGAMEDELAYBLACKSCREEN As Integer = 250
 
     'Declare beginning necessary engine needs
@@ -26,7 +27,7 @@ Public Class frmGame
     Private blnThreadSupported As Boolean = False
     Private rectFullScreen As Rectangle
     Private gGraphics As Graphics
-    Private btmCanvas As New Bitmap(ORIGINALSCREENWIDTH, ORIGINALSCREENHEIGHT) 'Original resolution of our game
+    Private btmCanvas As New Bitmap(ORIGINALSCREENWIDTH, ORIGINALSCREENHEIGHT, System.Drawing.Imaging.PixelFormat.Format32bppPArgb) 'Original resolution of our game
     Private pntTopLeft As New Point(0, 0)
     Private intCanvasMode As Integer = 0 'Default menu screen
     Private intCanvasShow As Integer = 0 'Default, no animation
@@ -148,8 +149,8 @@ Public Class frmGame
     Private btmLoadingParagraph75 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph75.png"))
     Private btmLoadingParagraph100 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraph100.png"))
     Private btmLoadingParagraph As New Bitmap(1424, 472)
-    Private thrParagraph As System.Threading.Thread
     Private pntLoadingParagraph As New Point(123, 261)
+    Private thrParagraph As System.Threading.Thread
     Private thrLoading As System.Threading.Thread
 
     'Game screen
@@ -163,12 +164,12 @@ Public Class frmGame
     Private btmWordBar As New Bitmap(Image.FromFile(strDirectory & "Images\Words\WordBar.png"))
     Private pntWordBar As New Point(482, 27)
     Private udcCharacter As clsCharacter
-    Private udcZombies(4) As clsZombie
-    Private intZombieSpeed As Integer = 0 'Defaulted for now as nothing
+    Private audcZombies(4) As clsZombie
+    Private intZombieSpeed As Integer = 0
     Private blnBackFromGame As Boolean = False
     Private blnGameOverFirstTime As Boolean = False
-    Private udcGameAmbiance As clsSound
     Private blnEndingGameCantType As Boolean = False
+    Private intBullet As Integer = 0
 
     'Words
     Private astrWords() As String 'Used to fill with words
@@ -183,6 +184,60 @@ Public Class frmGame
 
     'Credits screen
     Private btmCreditsBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Credits\CreditsBackground.jpg"))
+
+    'Versus screen
+    Private strIPAddress As String = ""
+    Private strNickname As String = "Player"
+    Private strNicknameConnected As String = ""
+    Private strIPAddressConnect As String = ""
+    Private intCanvasVersusShow As Integer = 0
+    Private blnFirstTimeNicknameTyping As Boolean = True 'Defaulted
+    Private blnFirstTimeIPAddressTyping As Boolean = True 'Defaulted
+    Private btmVersusBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusBackground.jpg"))
+    Private btmVersusNickname As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusNickname.png"))
+    Private pntVersusBlackOutline As New Point(100, 150)
+    Private btmVersusHost As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusHost.png"))
+    Private pntVersusHost As New Point(267, 605)
+    Private btmVersusOr As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusOr.png"))
+    Private pntVersusOr As New Point(831, 649)
+    Private btmVersusJoin As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusJoin.png"))
+    Private pntVersusJoin As New Point(951, 601)
+    Private btmVersusIPAddress As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusIPAddress.png"))
+    Private btmVersusConnect As New Bitmap(Image.FromFile(strDirectory & "Images\Versus\VersusConnect.png"))
+    Private pntVersusConnect As New Point(535, 600)
+
+    'Versus other variables
+    Private blnHost As Boolean = False
+    Private tcplServer As System.Net.Sockets.TcpListener
+    Private thrListening As System.Threading.Thread
+    Private tcpcClient As System.Net.Sockets.TcpClient
+    Private thrConnecting As System.Threading.Thread
+    Private swClientData As System.IO.StreamWriter
+    Private srClientData As System.IO.StreamReader
+    Private udcVersusConnectedThread As clsVersusConnectedThread
+    Private blnWaiting As Boolean = False
+    Private blnReadyEarly As Boolean = False
+
+    'Loading versus game variables
+    Private thrLoadingVersus As System.Threading.Thread
+    Private thrParagraphVersus As System.Threading.Thread
+    Private btmLoadingParagraphVersus25 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraphVersus25.png"))
+    Private btmLoadingParagraphVersus50 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraphVersus50.png"))
+    Private btmLoadingParagraphVersus75 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraphVersus75.png"))
+    Private btmLoadingParagraphVersus100 As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingParagraphVersus100.png"))
+    Private btmLoadingParagraphVersus As New Bitmap(1424, 472)
+    Private btmLoadingWaitingText As New Bitmap(Image.FromFile(strDirectory & "Images\Loading Game\LoadingWaitingText.png"))
+    Private pntLoadingWaitingText As New Point(594, 899)
+
+    'In versus game playing variables
+    Private udcCharacterOne As clsCharacter 'Host
+    Private udcCharacterTwo As clsCharacter 'Join
+    Private intZombieSpeedOne As Integer = 0
+    Private intZombieSpeedTwo As Integer = 0
+    Private audcZombiesOne(4) As clsZombie
+    Private audcZombiesTwo(4) As clsZombie
+    Private intBulletOne As Integer = 0
+    Private intBulletTwo As Integer = 0
 
     Protected Overrides Sub WndProc(ByRef m As System.Windows.Forms.Message)
 
@@ -285,12 +340,61 @@ Public Class frmGame
             End If
         End If
 
-        'Stop and dispose character and zombies
-        RemoveCharacterAndZombiesFromMemory()
+        'Remove game objects
+        RemoveGameObjectsFromMemory()
+
+        'Empty versus multiplayer variables
+        EmptyMultiplayerVariables()
 
     End Sub
 
-    Private Sub RemoveCharacterAndZombiesFromMemory()
+    Private Sub EmptyMultiplayerVariables()
+
+        'Threads in versus
+        If thrLoadingVersus IsNot Nothing Then
+            If thrLoadingVersus.IsAlive Then
+                thrLoadingVersus.Abort()
+            End If
+        End If
+        If thrParagraphVersus IsNot Nothing Then
+            If thrParagraphVersus.IsAlive Then
+                thrParagraphVersus.Abort()
+            End If
+        End If
+
+        'Empty versus multiplayer variables
+        If thrListening IsNot Nothing Then
+            If thrListening.IsAlive Then
+                thrListening.Abort()
+            End If
+        End If
+        If thrConnecting IsNot Nothing Then
+            If thrConnecting.IsAlive Then
+                thrConnecting.Abort()
+            End If
+        End If
+        If swClientData IsNot Nothing Then
+            swClientData.Close()
+        End If
+        If srClientData IsNot Nothing Then
+            srClientData.Close()
+        End If
+        If tcplServer IsNot Nothing Then
+            tcplServer.Stop()
+        End If
+        If tcpcClient IsNot Nothing Then
+            tcpcClient.Close()
+        End If
+
+        'Make this last because of try and end try can create glitch problems
+        If udcVersusConnectedThread IsNot Nothing Then
+            udcVersusConnectedThread.AbortCheckConnectionThread()
+            udcVersusConnectedThread.AbortReadLineThread()
+        End If
+
+    End Sub
+
+    Private Sub RemoveGameObjectsFromMemory()
 
         'Stop and dispose character
         If udcCharacter IsNot Nothing Then
@@ -299,10 +403,34 @@ Public Class frmGame
         End If
 
         'Stop and dispose zombies
-        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-            If udcZombies(intLoop) IsNot Nothing Then
-                udcZombies(intLoop).StopAndDispose()
-                udcZombies(intLoop) = Nothing
+        For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+            If audcZombies(intLoop) IsNot Nothing Then
+                audcZombies(intLoop).StopAndDispose()
+                audcZombies(intLoop) = Nothing
+            End If
+        Next
+
+        'Stop and dispose versus characters
+        If udcCharacterOne IsNot Nothing Then
+            udcCharacterOne.StopAndDispose()
+            udcCharacterOne = Nothing
+        End If
+        If udcCharacterTwo IsNot Nothing Then
+            udcCharacterTwo.StopAndDispose()
+            udcCharacterTwo = Nothing
+        End If
+
+        'Stop and dispose zombies
+        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+            If audcZombiesOne(intLoop) IsNot Nothing Then
+                audcZombiesOne(intLoop).StopAndDispose()
+                audcZombiesOne(intLoop) = Nothing
+            End If
+        Next
+        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+            If audcZombiesTwo(intLoop) IsNot Nothing Then
+                audcZombiesTwo(intLoop).StopAndDispose()
+                audcZombiesTwo(intLoop) = Nothing
             End If
         Next
 
@@ -342,8 +470,26 @@ Public Class frmGame
         While True
             'Empty variables if back from game
             If blnBackFromGame Then
-                'Stop and dispose character and zombies
-                RemoveCharacterAndZombiesFromMemory()
+                'Set
+                blnReadyEarly = False
+                'Set
+                blnWaiting = False
+                'Set
+                blnHost = False
+                'Set
+                intCanvasVersusShow = 0
+                'Abort
+                If thrEndGame IsNot Nothing Then
+                    If thrEndGame.IsAlive Then
+                        thrEndGame.Abort()
+                    End If
+                End If
+                'Stop and dispose game objects
+                RemoveGameObjectsFromMemory()
+                'Empty versus multiplayer variables
+                EmptyMultiplayerVariables()
+                'Restart fog
+                RestartFog()
                 'Set
                 blnBackFromGame = False
             End If
@@ -361,6 +507,12 @@ Public Class frmGame
                     HighscoresScreen()
                 Case 5 'Credits screen
                     CreditsScreen()
+                Case 6 'Versus screen
+                    VersusScreen()
+                Case 7 'Loading versus connected game
+                    LoadingVersusConnectedScreen()
+                Case 8 'Playing versus game
+                    StartedVersusGameScreen()
             End Select
             'Select to paint on screen
             gGraphics = Me.CreateGraphics()
@@ -480,9 +632,6 @@ Public Class frmGame
         'Draw sound text
         gGraphics.DrawImageUnscaled(btmSoundText, pntSoundText)
 
-        'Draw last stand text
-        gGraphics.DrawImageUnscaled(btmLastStandText, pntLastStandText)
-
         'Check which resolution
         CheckResolutionMode(0, btm800x600Text, btmNot800x600Text, pnt800x600Text)
         CheckResolutionMode(1, btm1024x768Text, btmNot1024x768Text, pnt1024x768Text)
@@ -534,7 +683,7 @@ Public Class frmGame
         gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
 
         'Draw Loading text
-        If intCanvasShow = 0 And intCanvasMode = 2 Then 'Have to check for both because at some point the rendering will glitch if not checked
+        If intCanvasShow = 0 And intCanvasMode = 2 Then
             gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
         Else
             gGraphics.DrawImageUnscaled(btmLoadingStartText, pntLoadingStartText)
@@ -553,15 +702,15 @@ Public Class frmGame
         SetDefaultGraphicOptions()
 
         'Draw dead zombies permanently
-        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-            If udcZombies(intLoop) IsNot Nothing Then
-                If udcZombies(intLoop).PaintOnBackgroundAfterDead Then
-                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+        For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+            If audcZombies(intLoop) IsNot Nothing Then
+                If audcZombies(intLoop).PaintOnBackgroundAfterDead Then
+                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).btmZombie, audcZombies(intLoop).pntZombie)
                     'Increase speed
                     intZombieSpeed += 1
                     'Create a new zombie
-                    udcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
-                    udcZombies(intLoop).Start()
+                    audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
+                    audcZombies(intLoop).Start()
                 End If
             End If
         Next
@@ -582,12 +731,12 @@ Public Class frmGame
         gGraphics.DrawImageUnscaled(udcCharacter.btmCharacter, udcCharacter.pntCharacter)
 
         'Draw zombies pinning
-        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-            If udcZombies(intLoop) IsNot Nothing Then
+        For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+            If audcZombies(intLoop) IsNot Nothing Then
                 'Check distance
-                If udcZombies(intLoop).pntZombie.X <= 200 And Not udcZombies(intLoop).IsPinning Then
+                If audcZombies(intLoop).pntZombie.X <= 200 And Not audcZombies(intLoop).IsPinning Then
                     'Set
-                    udcZombies(intLoop).Pin() 'Pinning character
+                    audcZombies(intLoop).Pin() 'Pinning character
                     'Character dying sound
                     If blnGameOverFirstTime Then
                         'Play
@@ -602,17 +751,17 @@ Public Class frmGame
                     End If
                 End If
                 'Paint if pinning
-                If udcZombies(intLoop).IsPinning And udcZombies(intLoop).IsAlive Then
-                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+                If audcZombies(intLoop).IsPinning And audcZombies(intLoop).IsAlive Then
+                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).btmZombie, audcZombies(intLoop).pntZombie)
                 End If
             End If
         Next
 
         'Draw zombies walking
-        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-            If udcZombies(intLoop) IsNot Nothing Then
-                If Not udcZombies(intLoop).PaintOnBackgroundAfterDead And Not udcZombies(intLoop).IsPinning Then
-                    gGraphics.DrawImageUnscaled(udcZombies(intLoop).btmZombie, udcZombies(intLoop).pntZombie)
+        For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+            If audcZombies(intLoop) IsNot Nothing Then
+                If Not audcZombies(intLoop).PaintOnBackgroundAfterDead And Not audcZombies(intLoop).IsPinning Then
+                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).btmZombie, audcZombies(intLoop).pntZombie)
                 End If
             End If
         Next
@@ -684,6 +833,178 @@ Public Class frmGame
 
         'Draw credits background
         gGraphics.DrawImageUnscaled(btmCreditsBackground, pntTopLeft)
+
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
+
+    End Sub
+
+    Private Sub VersusScreen()
+
+        'Paint on canvas
+        PaintOnCanvas()
+
+        'Draw background
+        gGraphics.DrawImageUnscaled(btmVersusBackground, pntTopLeft)
+
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
+
+        'Other
+        Select Case intCanvasVersusShow
+            Case 0 'Nickname
+                'Draw host button
+                gGraphics.DrawImageUnscaled(btmVersusHost, pntVersusHost)
+                'Draw or
+                gGraphics.DrawImageUnscaled(btmVersusOr, pntVersusOr)
+                'Draw join button
+                gGraphics.DrawImageUnscaled(btmVersusJoin, pntVersusJoin)
+                'Draw nickname
+                gGraphics.DrawImageUnscaled(btmVersusNickname, pntVersusBlackOutline)
+                'Draw player name text
+                DrawText(gGraphics, strNickname, 110, Color.White, 103, 350, 1500, 250)
+            Case 1 'Host
+                'Draw hosting text
+                DrawText(gGraphics, "Hosting...", 72, Color.Red, 600, 450, 1000, 125)
+            Case 2 'Join
+                'Draw IP address
+                gGraphics.DrawImageUnscaled(btmVersusIPAddress, pntVersusBlackOutline)
+                'Draw IP address to type
+                DrawText(gGraphics, strIPAddressConnect, 110, Color.White, 103, 350, 1500, 250)
+                'Draw connect button
+                gGraphics.DrawImageUnscaled(btmVersusConnect, pntVersusConnect)
+            Case 3 'Connecting
+                'Draw connecting text
+                DrawText(gGraphics, "Connecting...", 72, Color.Red, 500, 450, 1000, 125)
+        End Select
+
+        'Draw ip address text
+        DrawText(gGraphics, strIPAddress, 72, Color.Red, 15, 40, 1000, 125)
+
+    End Sub
+
+    Private Sub DrawText(gGraphicsDevice As Graphics, strText As String, sngFontSize As Single, colColor As Color, sngX As Single, sngY As Single,
+                         sngWidth As Single, sngHeight As Single)
+
+        'Draw text
+        Dim myFont As New Font("SketchFlow Print", sngFontSize, FontStyle.Regular)
+        Dim myBrush As New System.Drawing.SolidBrush(colColor)
+        gGraphics.DrawString(strText, myFont, myBrush, New RectangleF(sngX, sngY, sngWidth, sngHeight))
+
+    End Sub
+
+    Private Sub LoadingVersusConnectedScreen()
+
+        'Paint on canvas
+        PaintOnCanvas()
+
+        'Draw loading background
+        gGraphics.DrawImageUnscaled(btmLoadingBackground, pntTopLeft)
+
+        'Draw loading bar
+        gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
+
+        'Draw loading, waiting, and start text
+        If blnWaiting Then
+            gGraphics.DrawImageUnscaled(btmLoadingWaitingText, pntLoadingWaitingText)
+        Else
+            If intCanvasShow = 0 And intCanvasMode = 7 Then
+                gGraphics.DrawImageUnscaled(btmLoadingText, pntLoadingText)
+            Else
+                gGraphics.DrawImageUnscaled(btmLoadingStartText, pntLoadingStartText)
+            End If
+        End If
+
+        'Draw paragraph
+        gGraphics.DrawImageUnscaled(btmLoadingParagraphVersus, pntLoadingParagraph)
+
+    End Sub
+
+    Private Sub StartedVersusGameScreen()
+
+        'Move graphics to copy and print dead first
+        gGraphics = Graphics.FromImage(btmGameBackground)
+        'Set graphic options
+        SetDefaultGraphicOptions()
+
+        'Draw dead zombies permanently
+        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+            If audcZombiesOne(intLoop) IsNot Nothing Then
+                If audcZombiesOne(intLoop).PaintOnBackgroundAfterDead Then
+                    gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).btmZombie, audcZombiesOne(intLoop).pntZombie)
+                    'Increase speed
+                    intZombieSpeedOne += 1
+                    'Create a new zombie
+                    audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne)
+                    audcZombiesOne(intLoop).Start()
+                End If
+            End If
+        Next
+        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+            If audcZombiesTwo(intLoop) IsNot Nothing Then
+                If audcZombiesTwo(intLoop).PaintOnBackgroundAfterDead Then
+                    gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).btmZombie, audcZombiesTwo(intLoop).pntZombie)
+                    'Increase speed
+                    intZombieSpeedTwo += 1
+                    'Create a new zombie
+                    audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedTwo)
+                    audcZombiesTwo(intLoop).Start()
+                End If
+            End If
+        Next
+
+        'Paint on canvas
+        PaintOnCanvas()
+
+        'Draw the background, the armory area
+        gGraphics.DrawImageUnscaled(btmGameBackground, pntTopLeft)
+
+        'Draw word bar
+        gGraphics.DrawImageUnscaled(btmWordBar, pntWordBar)
+
+        'Draw word in the word bar
+        gGraphics.DrawImageUnscaled(btmWord, pntWord)
+
+        'Draw characters
+        gGraphics.DrawImageUnscaled(udcCharacterOne.btmCharacter, udcCharacterOne.pntCharacter)
+        gGraphics.DrawImageUnscaled(udcCharacterTwo.btmCharacter, udcCharacterTwo.pntCharacter)
+
+        'Draw zombies walking
+        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+            If audcZombiesOne(intLoop) IsNot Nothing Then
+                If Not audcZombiesOne(intLoop).PaintOnBackgroundAfterDead And Not audcZombiesOne(intLoop).IsPinning Then
+                    gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).btmZombie, audcZombiesOne(intLoop).pntZombie)
+                End If
+            End If
+        Next
+        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+            If audcZombiesTwo(intLoop) IsNot Nothing Then
+                If Not audcZombiesTwo(intLoop).PaintOnBackgroundAfterDead And Not audcZombiesTwo(intLoop).IsPinning Then
+                    gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).btmZombie, audcZombiesTwo(intLoop).pntZombie)
+                End If
+            End If
+        Next
+
+        'Draw nickname
+        If blnHost Then
+            DrawText(gGraphics, strNickname, 36, Color.Red, 90, 205, 1000, 125) 'Host sees own name
+            DrawText(gGraphics, strNicknameConnected, 36, Color.Blue, 200, 255, 1000, 125) 'Host sees joiner name
+        Else
+            DrawText(gGraphics, strNicknameConnected, 36, Color.Red, 90, 205, 1000, 125) 'Joiner sees host name
+            DrawText(gGraphics, strNickname, 36, Color.Blue, 200, 255, 1000, 125) 'Joiner sees own name
+        End If
 
         'Back button
         If intCanvasShow = 1 Then
@@ -876,6 +1197,9 @@ Public Class frmGame
             'Repaint options background
             intCanvasShow = 0
 
+            'Exit
+            Exit Sub
+
         End If
 
         'Check game screen
@@ -892,6 +1216,9 @@ Public Class frmGame
 
             'Repaint options background
             intCanvasShow = 0
+
+            'Exit
+            Exit Sub
 
         End If
 
@@ -910,8 +1237,12 @@ Public Class frmGame
             'Repaint options background
             intCanvasShow = 0
 
+            'Exit
+            Exit Sub
+
         End If
 
+        'Check credits screen
         If intCanvasMode = 5 Then
 
             'Back has been moused over
@@ -926,6 +1257,49 @@ Public Class frmGame
             'Repaint options background
             intCanvasShow = 0
 
+            'Exit
+            Exit Sub
+
+        End If
+
+        'Check versus screen
+        If intCanvasMode = 6 Then
+
+            'Back has been moused over
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
+                Exit Sub
+            End If
+
+            'Reset
+            sblnOnTopOf = False
+
+            'Repaint options background
+            intCanvasShow = 0
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'Check versus game screen
+        If intCanvasMode = 8 Then
+
+            'Back has been moused over
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                HoverText(1, sblnOnTopOf)
+                Exit Sub
+            End If
+
+            'Reset
+            sblnOnTopOf = False
+
+            'Repaint options background
+            intCanvasShow = 0
+
+            'Exit
+            Exit Sub
+
         End If
 
     End Sub
@@ -938,7 +1312,8 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(intCanvasModeToSet As Integer, intCanvasShowToSet As Integer)
+    Private Sub ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(intCanvasModeToSet As Integer, intCanvasShowToSet As Integer,
+                                                                      Optional blnPlayPressedSound As Boolean = True)
 
         'Set
         intCanvasMode = intCanvasModeToSet
@@ -947,7 +1322,9 @@ Public Class frmGame
         intCanvasShow = intCanvasShowToSet
 
         'Play sound
-        Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000, gintSoundVolume, False)
+        If blnPlayPressedSound Then
+            Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000, gintSoundVolume, False)
+        End If
 
     End Sub
 
@@ -957,19 +1334,19 @@ Public Class frmGame
         btmLoadingParagraph = btmLoadingParagraph25
 
         'Sleep
-        System.Threading.Thread.Sleep(333)
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
 
         'Set
         btmLoadingParagraph = btmLoadingParagraph50
 
         'Sleep
-        System.Threading.Thread.Sleep(333)
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
 
         'Set
         btmLoadingParagraph = btmLoadingParagraph75
 
         'Sleep
-        System.Threading.Thread.Sleep(333)
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
 
         'Set
         btmLoadingParagraph = btmLoadingParagraph100
@@ -985,6 +1362,9 @@ Public Class frmGame
 
         'Set
         btmLoadingBar = btmLoadingBar10
+
+        'Load game objects into module
+        LoadGameObjectsIntoModule()
 
         'Set
         btmEndGame = Nothing
@@ -1005,34 +1385,34 @@ Public Class frmGame
         btmLoadingBar = btmLoadingBar20
 
         'Set zombie speed
-        intZombieSpeed = 25
+        intZombieSpeed = 1
 
         'Zombie 1
-        udcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
+        audcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar30
 
         'Zombie 2
-        udcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeed)
+        audcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar40
 
         'Zombie 3
-        udcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeed)
+        audcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar50
 
         'Zombie 4
-        udcZombies(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeed)
+        audcZombies(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar60
 
         'Zombie 5
-        udcZombies(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeed)
+        audcZombies(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeed)
 
         'Set
         btmLoadingBar = btmLoadingBar70
@@ -1063,6 +1443,31 @@ Public Class frmGame
 
         'Set
         intCanvasShow = 1 'Means completely loaded
+
+    End Sub
+
+    Private Sub LoadPieceOfBitmaps(ByRef abtmByRefBitmap() As Bitmap, strMainFolder As String, strSubFolder As String)
+
+        'Load
+        For intLoop As Integer = 0 To abtmByRefBitmap.GetUpperBound(0)
+            abtmByRefBitmap(intLoop) = New Bitmap(Image.FromFile(strDirectory & "Images/" & strMainFolder & "/" & strSubFolder & "/" & CStr(intLoop + 1) & ".png"))
+        Next
+
+    End Sub
+
+    Private Sub LoadGameObjectsIntoModule()
+
+        'Check
+        If gbtmCharacterStand(0) Is Nothing Then
+            'Character
+            LoadPieceOfBitmaps(gbtmCharacterStand, "Character", "Standing")
+            LoadPieceOfBitmaps(gbtmCharacterShoot, "Character", "Shoot Once")
+            LoadPieceOfBitmaps(gbtmCharacterReload, "Character", "Reload")
+            'Zombies
+            LoadPieceOfBitmaps(gbtmZombieWalk, "Zombies\Generic", "Movement")
+            LoadPieceOfBitmaps(gbtmZombieDeath, "Zombies\Generic", "Death")
+            LoadPieceOfBitmaps(gbtmZombiePin, "Zombies\Generic", "Pinning")
+        End If
 
     End Sub
 
@@ -1124,6 +1529,18 @@ Public Class frmGame
             'Credits was clicked
             If blnMouseInRegion(pntMouse, 285, 78, pntCreditsText) Then
                 ShowNextScreenAndExitMenu(5, 0)
+                'Exit
+                Exit Sub
+            End If
+
+            'Versus was clicked
+            If blnMouseInRegion(pntMouse, 256, 74, pntVersusText) Then
+                'Set
+                strIPAddress = strGetLocalIPAddress()
+                'Set
+                blnFirstTimeNicknameTyping = True
+                blnFirstTimeIPAddressTyping = True
+                ShowNextScreenAndExitMenu(6, 0)
                 'Exit
                 Exit Sub
             End If
@@ -1214,18 +1631,16 @@ Public Class frmGame
             'Loading start text bar was clicked
             If intCanvasShow = 1 Then 'If finished loading
                 If blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
-                    'Play ambiance sound
-                    udcGameAmbiance = New clsSound(Me, strDirectory & "\Sounds\HellAmbiance.mp3", 36000, gintSoundVolume, True)
                     'Set
                     intCanvasMode = 3
                     'Set
                     intCanvasShow = 0
                     'Start character
-                    udcCharacter.Start()
+                    udcCharacter.Start(3000)
                     'Start zombies
-                    For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-                        If udcZombies(intLoop) IsNot Nothing Then
-                            udcZombies(intLoop).Start()
+                    For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+                        If audcZombies(intLoop) IsNot Nothing Then
+                            audcZombies(intLoop).Start()
                         End If
                     Next
                     'Exit
@@ -1243,22 +1658,12 @@ Public Class frmGame
 
             'Back was clicked
             If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
-                'Stop sound
-                udcGameAmbiance.StopAndCloseSound()
                 'Menu sound
                 udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
                 'Set
                 ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
                 'Set
                 blnBackFromGame = True
-                'Abort
-                If thrEndGame IsNot Nothing Then
-                    If thrEndGame.IsAlive Then
-                        thrEndGame.Abort()
-                    End If
-                End If
-                'Restart fog
-                RestartFog()
                 'Exit
                 Exit Sub
             End If
@@ -1306,6 +1711,167 @@ Public Class frmGame
             'Exit
             Exit Sub
 
+        End If
+
+        'If versus screen
+        If intCanvasMode = 6 Then
+
+            'Back was clicked
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Check nickname
+                DefaultNickname()
+                'Go back to menu
+                GoBackToMenuConnectionGone(True)
+                'Exit
+                Exit Sub
+            End If
+
+            'Check for host or join
+            If intCanvasVersusShow = 0 Then
+                'Host was clicked
+                If blnMouseInRegion(pntMouse, 545, 176, pntVersusHost) Then
+                    'Check nickname
+                    DefaultNickname()
+                    'Set
+                    intCanvasVersusShow = 1
+                    'Set
+                    blnHost = True
+                    'Set
+                    tcplServer = New System.Net.Sockets.TcpListener(System.Net.IPAddress.Any, 10101)
+                    'Start
+                    tcplServer.Start()
+                    'Start thread listening
+                    thrListening = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Listening))
+                    thrListening.Start()
+                    'Exit
+                    Exit Sub
+                End If
+                'Join was clicked
+                If blnMouseInRegion(pntMouse, 441, 170, pntVersusJoin) Then
+                    'Set
+                    strIPAddressConnect = strGetLocalIPAddress()
+                    'Check nickname
+                    DefaultNickname()
+                    'Set
+                    intCanvasVersusShow = 2
+                    'Exit
+                    Exit Sub
+                End If
+                'Exit
+                Exit Sub
+            End If
+
+            'Check for connect button
+            If intCanvasVersusShow = 2 Then
+                'Connect was clicked
+                If blnMouseInRegion(pntMouse, 605, 124, pntVersusConnect) Then
+                    'Set
+                    intCanvasVersusShow = 3
+                    'Start thread connecting
+                    thrConnecting = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Connecting))
+                    thrConnecting.Start()
+                    'Exit
+                    Exit Sub
+                End If
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If loading versus screen
+        If intCanvasMode = 7 Then
+
+            'Check if hosting
+            If blnHost Then
+                'Start was clicked
+                If Not blnWaiting And intCanvasShow = 1 Then
+                    'Start was clicked
+                    If blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                        'Send playing
+                        SendData("0|" & strNickname)
+                        'Start game locally
+                        ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(8, 0, False)
+                        'Started versus game, start objects
+                        StartVersusGameObjects()
+                        'Exit
+                        Exit Sub
+                    End If
+                End If
+            Else
+                'Start was clicked
+                If Not blnWaiting And intCanvasShow = 1 Then
+                    'Start was clicked
+                    If blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                        'Send ready to play as joiner
+                        SendData("0|" & strNickname)
+                        blnWaiting = True
+                        'Exit
+                        Exit Sub
+                    End If
+                End If
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'If versus game screen
+        If intCanvasMode = 8 Then
+
+            'Back was pressed
+            If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
+                'Quit versus multiplayer
+                GoBackToMenuConnectionGone(True)
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+    End Sub
+
+    Private Sub StartVersusGameObjects()
+
+        'Start characters
+        udcCharacterOne.Start(3000)
+        udcCharacterTwo.Start(3000)
+
+        'Start zombies
+        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+            audcZombiesOne(intLoop).Start()
+        Next
+        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+            audcZombiesTwo(intLoop).Start()
+        Next
+
+    End Sub
+
+    Private Sub GoBackToMenuConnectionGone(blnPlayPressedSound As Boolean)
+
+        'Menu sound
+        udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+
+        'Set
+        ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0, blnPlayPressedSound)
+
+        'Set
+        blnBackFromGame = True
+
+    End Sub
+
+    Private Sub DefaultNickname()
+
+        'Check nickname
+        If strNickname = "" Then
+            strNickname = "Player"
         End If
 
     End Sub
@@ -1420,6 +1986,145 @@ Public Class frmGame
         'Check if playing game
         If intCanvasMode = 3 Then
 
+            'Exit if reloading
+            If udcCharacter.CharacterIsReloading Then
+                Exit Sub
+            End If
+
+            'Check the word being typed
+            If Not blnEndingGameCantType Then
+                If strWord.Substring(0, 1) = LCase(e.KeyChar) Or strWord.Substring(0, 1) = UCase(e.KeyChar) Then
+                    'Change word by one less letter
+                    strWord = strWord.Substring(1)
+                    'Increase
+                    intWordIndex += 1
+                    'Check if word is done
+                    If Len(strWord) = 0 Then
+                        'Get a new word
+                        LoadARandomWord()
+                        'Increase
+                        intBullet += 1
+                        'Character shoots
+                        udcCharacter.CharacterShot(intBullet)
+                        'Reset bullets
+                        If intBullet = 30 Then
+                            intBullet = 0
+                        End If
+                        'Kill closest zombie
+                        Dim intIndex As Integer = intGetIndexOfClosestZombie(audcZombies) 'If returns too high, means player typed too good, shoot nothing
+                        If intIndex <> audcZombies.GetUpperBound(0) + 1 Then
+                            audcZombies(intIndex).Dead()
+                        End If
+                    Else
+                        'Show to screen
+                        btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" &
+                                  UCase(strTheWord.Substring(0, 1)) & strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
+                    End If
+                End If
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'Check if changing versus nickname or IP address
+        If intCanvasMode = 6 Then
+
+            'Check show for typing nickname
+            If intCanvasVersusShow = 0 Then
+                'Check length
+                If Len(strNickname) < 9 Then
+                    'Check the keypress
+                    Select Case Asc(e.KeyChar)
+                        Case 8 'Backspace
+                            'Check if first time key pressing
+                            KeyPressBackspacing(blnFirstTimeNicknameTyping, strNickname)
+                        Case 32, 65 To 90, 97 To 122 '32 = spacebar, 65 to 90 is upper case A-Z, 97 to 122 is lower case a-z
+                            'Check if first time key pressing
+                            If blnFirstTimeNicknameTyping Then
+                                strNickname = e.KeyChar
+                                blnFirstTimeNicknameTyping = False
+                            Else
+                                strNickname &= e.KeyChar
+                            End If
+                        Case Else 'Used for debugging
+                            'Debug.Print(Cstr(Asc(e.KeyChar)))
+                    End Select
+                Else
+                    'Allow backspace
+                    If Asc(e.KeyChar) = 8 Then
+                        'Check if first time key pressing
+                        KeyPressBackspacing(blnFirstTimeNicknameTyping, strNickname)
+                    End If
+                End If
+                'Exit
+                Exit Sub
+            End If
+
+            'Check show for typing IP address
+            If intCanvasVersusShow = 2 Then 'Joining
+                'Check if pressing for first time
+                If blnFirstTimeIPAddressTyping Then
+                    'Check the keypress
+                    Select Case Asc(e.KeyChar)
+                        Case 8, 48 To 57 '8 is backspace, 48 to 57 is 0 to 9 in numbers
+                            'Check if first time key pressing
+                            strIPAddressConnect = e.KeyChar
+                            blnFirstTimeIPAddressTyping = False
+                        Case Else 'Used for debugging
+                            'Debug.Print(CStr(Asc(e.KeyChar)))
+                    End Select
+                Else
+                    'Check length
+                    If Len(strIPAddressConnect) < 15 Then 'XXX.XXX.XXX.XXX
+                        'Check the keypress
+                        Select Case Asc(e.KeyChar)
+                            Case 8 'Backspace
+                                'Check if first time key pressing
+                                KeyPressBackspacing(blnFirstTimeIPAddressTyping, strIPAddressConnect)
+                            Case 46, 48 To 57 '46 = period, 48 to 57 is 0 to 9 in numbers
+                                'Check if first time key pressing
+                                If blnFirstTimeIPAddressTyping Then
+                                    strIPAddressConnect = e.KeyChar
+                                    blnFirstTimeIPAddressTyping = False
+                                Else
+                                    strIPAddressConnect &= e.KeyChar
+                                End If
+                            Case Else 'Used for debugging
+                                'Debug.Print(CStr(Asc(e.KeyChar)))
+                        End Select
+                    Else
+                        'Allow backspace
+                        If Asc(e.KeyChar) = 8 Then
+                            'Check if first time key pressing
+                            KeyPressBackspacing(blnFirstTimeIPAddressTyping, strIPAddressConnect)
+                        End If
+                    End If
+                End If
+                'Exit
+                Exit Sub
+            End If
+
+            'Exit
+            Exit Sub
+
+        End If
+
+        'Check if in versus game
+        If intCanvasMode = 8 Then
+
+            'Exit if reloading
+            If blnHost Then
+                If udcCharacterOne.CharacterIsReloading Then
+                    Exit Sub
+                End If
+            Else
+                If udcCharacterTwo.CharacterIsReloading Then
+                    Exit Sub
+                End If
+            End If
+
             'Check the word being typed
             If Not blnEndingGameCantType Then
                 If strWord.Substring(0, 1) = LCase(e.KeyChar) Or strWord.Substring(0, 1) = UCase(e.KeyChar) Then
@@ -1432,16 +2137,41 @@ Public Class frmGame
                         'Get a new word
                         LoadARandomWord()
                         'Character shoots
-                        udcCharacter.CharacterShot()
+                        If blnHost Then
+                            udcCharacterOne.CharacterShot(1)
+                        Else
+                            udcCharacterTwo.CharacterShot(1)
+                        End If
                         'Kill closest zombie
-                        Dim intIndex As Integer = intGetIndexOfClosestZombie() 'If returns too high, means player typed too good, shoot nothing
-                        If intIndex <> udcZombies.GetUpperBound(0) + 1 Then
-                            udcZombies(intIndex).Dead()
+                        If blnHost Then
+                            'Get closest zombie
+                            Dim intIndex As Integer = intGetIndexOfClosestZombie(audcZombiesOne) 'If returns too high, means player typed too good, shoot nothing
+                            'Check
+                            If intIndex <> audcZombiesOne.GetUpperBound(0) + 1 Then
+                                audcZombiesOne(intIndex).Dead()
+                                'Send data, character shot
+                                SendData("1|" & intIndex) 'Zombie kill by host
+                            Else
+                                'Send data, character shot
+                                SendData("1|")
+                            End If
+                        Else
+                            'Get closest zombie
+                            Dim intIndex As Integer = intGetIndexOfClosestZombie(audcZombiesTwo) 'If returns too high, means player typed too good, shoot nothing
+                            'Check
+                            If intIndex <> audcZombiesTwo.GetUpperBound(0) + 1 Then
+                                audcZombiesTwo(intIndex).Dead()
+                                'Send data, character shot
+                                SendData("1|" & intIndex) 'Zombie kill by joiner
+                            Else
+                                'Send data, character shot
+                                SendData("1|")
+                            End If
                         End If
                     Else
                         'Show to screen
-                        btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
-                                  strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
+                        btmWord = New Bitmap(New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" &
+                                  UCase(strTheWord.Substring(0, 1)) & strTheWord.Substring(1) & "\" & CStr(intWordIndex) & ".png")))
                     End If
                 End If
             End If
@@ -1453,18 +2183,32 @@ Public Class frmGame
 
     End Sub
 
-    Private Function intGetIndexOfClosestZombie() As Integer
+    Private Sub KeyPressBackspacing(ByRef blnByRefFirstTimeToCheck As Boolean, ByRef strByRefToChange As String)
+
+        'Check if first time key pressing
+        If blnByRefFirstTimeToCheck Then
+            strByRefToChange = ""
+            blnByRefFirstTimeToCheck = False
+        Else
+            If Len(strByRefToChange) <> 0 Then
+                strByRefToChange = strByRefToChange.Substring(0, Len(strByRefToChange) - 1)
+            End If
+        End If
+
+    End Sub
+
+    Private Function intGetIndexOfClosestZombie(audcZombie() As clsZombie) As Integer
 
         'Declare
         Dim intClosestX As Integer = Integer.MaxValue
-        Dim intIndex As Integer = udcZombies.GetUpperBound(0) + 1
+        Dim intIndex As Integer = audcZombie.GetUpperBound(0) + 1
 
         'Loop to get closest zombie
-        For intLoop As Integer = 0 To udcZombies.GetUpperBound(0)
-            If udcZombies(intLoop) IsNot Nothing Then
-                If udcZombies(intLoop).IsAlive Then
-                    If intClosestX > udcZombies(intLoop).pntZombie.X Then
-                        intClosestX = udcZombies(intLoop).pntZombie.X
+        For intLoop As Integer = 0 To audcZombie.GetUpperBound(0)
+            If audcZombie(intLoop) IsNot Nothing Then
+                If audcZombie(intLoop).IsAlive Then
+                    If intClosestX > audcZombie(intLoop).pntZombie.X Then
+                        intClosestX = audcZombie(intLoop).pntZombie.X
                         intIndex = intLoop
                     End If
                 End If
@@ -1507,6 +2251,302 @@ Public Class frmGame
         'Set bitmap of the word
         btmWord = New Bitmap(Image.FromFile(strDirectory.Substring(0, Len(strDirectory) - 1) & "Images\Words\" & UCase(strTheWord.Substring(0, 1)) &
                   strTheWord.Substring(1) & "\0.png"))
+
+    End Sub
+
+    Private Function strGetLocalIPAddress() As String
+
+        'Declare
+        Dim strTemp As String = ""
+
+        'Loop
+        For intLoop As Integer = 0 To System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName).AddressList.GetUpperBound(0)
+            If InStr(System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName).AddressList(intLoop).ToString(), ":") = 0 Then
+                strTemp = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName).AddressList(intLoop).ToString()
+                Exit For
+            End If
+        Next
+
+        'Return IP
+        Return strTemp
+
+    End Function
+
+    Private Sub Listening()
+
+        'Loop
+        While True
+            'Check for pending
+            Try
+                If tcplServer.Pending Then
+                    'Accept
+                    tcpcClient = New System.Net.Sockets.TcpClient
+                    tcpcClient = tcplServer.AcceptTcpClient
+                    'Set streams, class, handlers, and prepare the next screen
+                    PrepareTheConnectionState()
+                    'Exit this thread
+                    Exit While
+                End If
+            Catch ex As Exception
+                'No debug
+            End Try
+        End While
+
+    End Sub
+
+    Private Sub Connecting()
+
+        'Declare
+        Dim blnConnected As Boolean = False
+
+        'Loop
+        While True
+            'Try to connect
+            Try
+                tcpcClient = New System.Net.Sockets.TcpClient(strIPAddressConnect, 10101)
+                blnConnected = True
+            Catch ex As Exception
+                'No debug
+            End Try
+            'Check if connected
+            If blnConnected Then
+                'Set streams, class, handlers, and prepare the next screen
+                PrepareTheConnectionState()
+                'Stop connecting
+                Exit While
+            End If
+        End While
+
+    End Sub
+
+    Private Sub PrepareTheConnectionState()
+
+        'Set streams
+        swClientData = New System.IO.StreamWriter(tcpcClient.GetStream())
+        srClientData = New System.IO.StreamReader(tcpcClient.GetStream())
+
+        'Set read line and check connection class
+        udcVersusConnectedThread = New clsVersusConnectedThread(tcpcClient, srClientData)
+
+        'Add handlers
+        AddHandler udcVersusConnectedThread.GotData, AddressOf Me.DataArrival
+        AddHandler udcVersusConnectedThread.ConnectionGone, AddressOf Me.ConnectionLost
+
+        'Set
+        intCanvasMode = 7
+
+        'Start loading game
+        thrLoadingVersus = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf LoadingVersusGame))
+        thrLoadingVersus.Start()
+
+        'Start paragraphing
+        thrParagraphVersus = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf ParagraphingVersus))
+        thrParagraphVersus.Start()
+
+    End Sub
+
+    Private Sub ParagraphingVersus()
+
+        'Set
+        btmLoadingParagraphVersus = btmLoadingParagraphVersus25
+
+        'Sleep
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
+
+        'Set
+        btmLoadingParagraphVersus = btmLoadingParagraphVersus50
+
+        'Sleep
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
+
+        'Set
+        btmLoadingParagraphVersus = btmLoadingParagraphVersus75
+
+        'Sleep
+        System.Threading.Thread.Sleep(LOADINGPARAGRAPHDELAY)
+
+        'Set
+        btmLoadingParagraphVersus = btmLoadingParagraphVersus100
+
+    End Sub
+
+    Private Sub LoadingVersusGame()
+
+        'Notes: This procedure is for loading the game to play versus
+
+        'Set
+        btmLoadingBar = btmLoadingBar0
+
+        'Set
+        btmLoadingBar = btmLoadingBar10
+
+        'Load game objects into module
+        LoadGameObjectsIntoModule()
+
+        'Set
+        btmEndGame = Nothing
+
+        'Set
+        blnEndingGameCantType = False
+
+        'Set
+        blnGameOverFirstTime = True
+
+        'Set to be fresh
+        btmGameBackground = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\GameBackground.jpg"))
+
+        'Characters
+        udcCharacterOne = New clsCharacter(Me, 100, 300) 'Host
+        udcCharacterTwo = New clsCharacter(Me, 200, 350) 'Join
+
+        'Set
+        btmLoadingBar = btmLoadingBar20
+
+        'Set zombie speed
+        intZombieSpeedOne = 1
+        intZombieSpeedTwo = 1
+
+        'Set
+        btmLoadingBar = btmLoadingBar30
+
+        'Zombies for host
+        audcZombiesOne(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 300, intZombieSpeedOne)
+        audcZombiesOne(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 300, intZombieSpeedOne)
+        audcZombiesOne(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 300, intZombieSpeedOne)
+        audcZombiesOne(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 300, intZombieSpeedOne)
+        audcZombiesOne(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 300, intZombieSpeedOne)
+
+        'Set
+        btmLoadingBar = btmLoadingBar40
+
+        'Zombies for joiner
+        audcZombiesTwo(0) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo)
+        audcZombiesTwo(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500 + 100, 350, intZombieSpeedTwo)
+        audcZombiesTwo(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000 + 100, 350, intZombieSpeedTwo)
+        audcZombiesTwo(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500 + 100, 350, intZombieSpeedTwo)
+        audcZombiesTwo(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000 + 100, 350, intZombieSpeedTwo)
+
+        'Set
+        btmLoadingBar = btmLoadingBar50
+
+        'Set
+        btmLoadingBar = btmLoadingBar60
+
+        'Set
+        btmLoadingBar = btmLoadingBar70
+
+        'Set
+        btmLoadingBar = btmLoadingBar80
+
+        'Set
+        btmEndGame25 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame25.png"))
+        btmEndGame50 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame50.png"))
+        btmEndGame75 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame75.png"))
+        btmEndGame100 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\EndGame100.png"))
+
+        'Set
+        btmLoadingBar = btmLoadingBar90
+
+        'Set
+        btmLoadingBar = btmLoadingBar99
+
+        'Load all words
+        LoadAllWords()
+
+        'Grab a random word
+        LoadARandomWord()
+
+        'Set
+        btmLoadingBar = btmLoadingBar100
+
+        'Set if hosting
+        If blnHost And Not blnReadyEarly Then
+            blnWaiting = True
+        End If
+
+        'Set
+        intCanvasShow = 1 'Means completely loaded
+
+    End Sub
+
+    Private Sub SendData(strData As String)
+
+        'Send data
+        Try
+            'Send
+            swClientData.WriteLine(strData)
+            swClientData.Flush()
+            'Wait
+            Application.DoEvents()
+        Catch ex As Exception
+            'No debug
+        End Try
+
+    End Sub
+
+    Private Sub DataArrival(strData As String)
+
+        'Check if host
+        If blnHost Then
+
+            'Check data
+            Select Case (strGetBlockData(strData))
+                Case "0" 'Waiting to start game
+                    'Set name
+                    strNicknameConnected = strGetBlockData(strData, 1)
+                    'Ready to play but waiting for host to hit start
+                    blnWaiting = False
+                    blnReadyEarly = True
+                Case "1" 'Show join has shot
+                    'Check
+                    If strData <> "1|" Then
+                        audcZombiesTwo(CInt(strGetBlockData(strData, 1))).Dead()
+                    End If
+                    'Character shot
+                    udcCharacterTwo.CharacterShot(1)
+            End Select
+
+        Else 'Joiner
+
+            'Check data
+            Select Case (strGetBlockData(strData))
+                Case "0"
+                    'Set name
+                    strNicknameConnected = strGetBlockData(strData, 1)
+                    'Start was hit, game started for joiner
+                    ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(8, 0, False)
+                    blnWaiting = False
+                    'Started versus game, start objects
+                    StartVersusGameObjects()
+                Case "1" 'Show host has shot
+                    'Check
+                    If strData <> "1|" Then
+                        audcZombiesOne(CInt(strGetBlockData(strData, 1))).Dead()
+                    End If
+                    'Character shot
+                    udcCharacterOne.CharacterShot(1)
+            End Select
+
+        End If
+
+    End Sub
+
+    Private Function strGetBlockData(strData As String, Optional intArrayElement As Integer = 0) As String
+
+        'Notes: Data looks like "X|" or "X|String"
+
+        'Declare
+        Dim astrTemp() As String = Split(strData, "|")
+
+        'Return
+        Return astrTemp(intArrayElement)
+
+    End Function
+
+    Private Sub ConnectionLost()
+
+        'Go back to menu
+        GoBackToMenuConnectionGone(False)
 
     End Sub
 

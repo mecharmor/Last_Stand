@@ -34,7 +34,7 @@ Public Class clsZombie
         _frmToPass = frmToPass
 
         'Preset
-        btmZombie = gbtmZombieWalk1
+        btmZombie = gbtmZombieWalk(0)
 
         'Set
         _intSpeed = intSpeed
@@ -71,10 +71,10 @@ Public Class clsZombie
                 'Pinning the character
                 Select Case intFrame 'Interval is 200 in this area
                     Case 1
-                        btmZombie = gbtmZombiePin1
+                        btmZombie = gbtmZombiePin(0)
                         intFrame = 2
                     Case 2
-                        btmZombie = gbtmZombiePin2
+                        btmZombie = gbtmZombiePin(1)
                         intFrame = 1
                 End Select
             Else
@@ -86,16 +86,16 @@ Public Class clsZombie
                     'Check frame
                     Select Case intFrame 'Interval is 300 in this area
                         Case 1
-                            btmZombie = gbtmZombieWalk1
+                            btmZombie = gbtmZombieWalk(0)
                             intFrame = 2
                         Case 2
-                            btmZombie = gbtmZombieWalk2
+                            btmZombie = gbtmZombieWalk(1)
                             intFrame = 3
                         Case 3
-                            btmZombie = gbtmZombieWalk3
+                            btmZombie = gbtmZombieWalk(2)
                             intFrame = 4
                         Case 4
-                            btmZombie = gbtmZombieWalk4
+                            btmZombie = gbtmZombieWalk(3)
                             intFrame = 1
                             'Switch up time
                             blnSwitch = True
@@ -104,10 +104,10 @@ Public Class clsZombie
                     'Check frame
                     Select Case intFrame
                         Case 1
-                            btmZombie = gbtmZombieWalk3
+                            btmZombie = gbtmZombieWalk(2)
                             intFrame = 2
                         Case 2
-                            btmZombie = gbtmZombieWalk2
+                            btmZombie = gbtmZombieWalk(1)
                             intFrame = 1
                             'Switch up time
                             blnSwitch = False
@@ -118,19 +118,19 @@ Public Class clsZombie
             'Check frame
             Select Case intFrame
                 Case 1
-                    btmZombie = gbtmZombieDeath2
+                    btmZombie = gbtmZombieDeath(1)
                     intFrame = 2
                 Case 2
-                    btmZombie = gbtmZombieDeath3
+                    btmZombie = gbtmZombieDeath(2)
                     intFrame = 3
                 Case 3
-                    btmZombie = gbtmZombieDeath4
+                    btmZombie = gbtmZombieDeath(3)
                     intFrame = 4
                 Case 4
-                    btmZombie = gbtmZombieDeath5
+                    btmZombie = gbtmZombieDeath(4)
                     intFrame = 5
                 Case 5
-                    btmZombie = gbtmZombieDeath6
+                    btmZombie = gbtmZombieDeath(5)
                     'Stop timer and handler
                     StopAndDispose()
                     'Paint on top of the background
@@ -179,7 +179,7 @@ Public Class clsZombie
 
         'Change frame immediately
         intFrame = 1
-        btmZombie = gbtmZombieDeath1
+        btmZombie = gbtmZombieDeath(0)
 
         'Declare
         Dim rndNumber As New Random
@@ -204,7 +204,7 @@ Public Class clsZombie
 
         'Change frame immediately
         intFrame = 1
-        btmZombie = gbtmZombiePin1
+        btmZombie = gbtmZombiePin(0)
 
         'Start timer again
         sttTimer.Enabled = True

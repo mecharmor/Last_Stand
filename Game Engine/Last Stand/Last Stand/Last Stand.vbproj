@@ -72,6 +72,7 @@
   <ItemGroup>
     <Compile Include="clsCharacter.vb" />
     <Compile Include="clsSound.vb" />
+    <Compile Include="clsVersusConnectedThread.vb" />
     <Compile Include="clsZombie.vb" />
     <Compile Include="frmGame.vb">
       <SubType>Form</SubType>
