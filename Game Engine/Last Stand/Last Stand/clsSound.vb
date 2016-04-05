@@ -45,10 +45,15 @@ Public Class clsSound
         If blnRepeat Then
             'Set
             strRepeat = " repeat"
-            'Open file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
-            'Play file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias & strRepeat, "", 0, 0))
+            'Prevent error
+            Try
+                'Open file
+                _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
+                'Play file
+                _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias & strRepeat, "", 0, 0))
+            Catch ex As Exception
+                'No debug
+            End Try
         Else
             'Set
             thrCloseFile = New System.Threading.Thread(New System.Threading.ThreadStart(Sub() ClosingFile(intLengthOfFile)))
@@ -57,18 +62,27 @@ Public Class clsSound
             PlaySound()
         End If
 
-        'Check for volume
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0))
+        'Prevent error
+        Try
+            'Check for volume
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0))
+        Catch ex As Exception
+            'No debug
+        End Try
 
     End Sub
 
     Public Sub StopAndCloseSound()
 
-        'Stop file
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & strAlias, "", 0, 0))
-
-        'Close file
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("close " & strAlias, "", 0, 0))
+        'Prevent error
+        Try
+            'Stop file
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & strAlias, "", 0, 0))
+            'Close file
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("close " & strAlias, "", 0, 0))
+        Catch ex As Exception
+            'No debug
+        End Try
 
     End Sub
 
@@ -89,11 +103,15 @@ Public Class clsSound
 
         'Notes: Must have a form because MCI uses a thread and needs an invoke, otherwise no sound
 
-        'Open file
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
-
-        'Play file
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias, "", 0, 0))
+        'Prevent error
+        Try
+            'Open file
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
+            'Play file
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias, "", 0, 0))
+        Catch ex As Exception
+            'No debug
+        End Try
 
     End Sub
 
@@ -105,13 +123,13 @@ Public Class clsSound
         Dim intWait As Integer = 0
 
         'Sleep, but count so program can be safely exited immediately
-        Do Until intWait = intLengthOfFile
+        While intWait <> intLengthOfFile
             System.Threading.Thread.Sleep(1)
             intWait += 1
             If Not _frmToPass.IsHandleCreated Then
-                Exit Do
+                Exit While
             End If
-        Loop
+        End While
 
         'Prevent errors
         Try

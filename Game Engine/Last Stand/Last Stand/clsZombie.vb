@@ -8,25 +8,30 @@ Public Class clsZombie
     'Declare
     Private _frmToPass As Form
     Private intFrame As Integer = 1
-    Private thrAnimation As System.Threading.Thread
     Private blnSwitch As Boolean = False
     Private intSpotX As Integer = 0
     Private intSpotY As Integer = 0
     Private _intSpeed As Integer = 25
+    Private intFrameDeath As Integer = 0
 
     'Bitmaps
-    Public btmZombie As Bitmap
-    Public pntZombie As Point
+    Private btmZombie As Bitmap
+    Private pntZombie As Point
 
-    'Timer
-    Private sttTimer As System.Timers.Timer
+    'Thread
+    Private thrAnimating As System.Threading.Thread
+    Private _intAnimatingDelay As Integer = 0
 
-    'Death
-    Private blnAlive As Boolean = True
-    Private blnPaintOnBackgroundAfterDead As Boolean = False
+    'Dying
+    Private blnIsDying As Boolean = False
+    Private blnFirstTimeDyingPass As Boolean = False
 
-    'Pinning character
-    Private blnPinning As Boolean = False
+    'Pinning
+    Private blnIsPinning As Boolean = False
+    Private blnFirstTimePinningPass As Boolean = False
+
+    'Dead for painting on background
+    Private blnDead As Boolean = False
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, Optional blnStart As Boolean = False)
 
@@ -44,10 +49,6 @@ Public Class clsZombie
         intSpotY = intSpawnY
         pntZombie = New Point(intSpotX, intSpotY)
 
-        'Set frame timer
-        sttTimer = New System.Timers.Timer(200) 'For walking
-        AddHandler sttTimer.Elapsed, AddressOf Animating
-
         'Start
         If blnStart Then
             Start()
@@ -55,97 +56,219 @@ Public Class clsZombie
 
     End Sub
 
-    Public Sub Start()
+    Public Sub Start(Optional intAnimatingDelay As Integer = 175)
 
-        'Enable timer
-        sttTimer.Enabled = True
+        'Set
+        _intAnimatingDelay = intAnimatingDelay
+
+        'Start thread, timed to repeat incase of too much aborting
+        While Not blnStart()
+        End While
 
     End Sub
 
-    Private Sub Animating(sender As Object, e As System.Timers.ElapsedEventArgs)
+    Private Function blnStart() As Boolean
 
-        'Check if alive before checking frame
-        If blnAlive Then
-            'Check if pinning or walking
-            If blnPinning Then
-                'Pinning the character
-                Select Case intFrame 'Interval is 200 in this area
-                    Case 1
-                        btmZombie = gbtmZombiePin(0)
-                        intFrame = 2
-                    Case 2
-                        btmZombie = gbtmZombiePin(1)
-                        intFrame = 1
-                End Select
-            Else
-                'Change point
-                pntZombie.X = intSpotX
-                intSpotX -= _intSpeed 'Speed they come at
-                'Check if going forward or backwards with the frames (1, 2, 3, 4) or (3, 2, 1) but becomes (1, 2, 3, 4, 3, 2, 1, 2, 3, 4, etc.)
-                If Not blnSwitch Then
-                    'Check frame
-                    Select Case intFrame 'Interval is 300 in this area
-                        Case 1
-                            btmZombie = gbtmZombieWalk(0)
-                            intFrame = 2
-                        Case 2
-                            btmZombie = gbtmZombieWalk(1)
-                            intFrame = 3
-                        Case 3
-                            btmZombie = gbtmZombieWalk(2)
-                            intFrame = 4
-                        Case 4
-                            btmZombie = gbtmZombieWalk(3)
-                            intFrame = 1
-                            'Switch up time
-                            blnSwitch = True
-                    End Select
-                Else
-                    'Check frame
-                    Select Case intFrame
-                        Case 1
-                            btmZombie = gbtmZombieWalk(2)
-                            intFrame = 2
-                        Case 2
-                            btmZombie = gbtmZombieWalk(1)
-                            intFrame = 1
-                            'Switch up time
-                            blnSwitch = False
-                    End Select
-                End If
+        'Declare
+        Dim blnPassed As Boolean = False
+
+        'Start thread
+        Try
+            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+            thrAnimating.Start()
+            'Set
+            blnPassed = True
+        Catch ex As Exception
+            'No debug, if got here, typed way too fast
+            blnPassed = False
+        End Try
+
+        'Return
+        Return blnPassed
+
+    End Function
+
+    Public ReadOnly Property ZombieImage() As Bitmap
+
+        'Return
+        Get
+            Return btmZombie
+        End Get
+
+    End Property
+
+    Public ReadOnly Property ZombiePoint() As Point
+
+        'Return
+        Get
+            Return pntZombie
+        End Get
+
+    End Property
+
+    Public Sub StopAndDispose()
+
+        'Abort animating
+        If thrAnimating IsNot Nothing Then
+            If thrAnimating.IsAlive Then
+                thrAnimating.Abort()
+                thrAnimating = Nothing
             End If
-        Else 'Interval is 150 in this area
-            'Check frame
-            Select Case intFrame
-                Case 1
-                    btmZombie = gbtmZombieDeath(1)
-                    intFrame = 2
-                Case 2
-                    btmZombie = gbtmZombieDeath(2)
-                    intFrame = 3
-                Case 3
-                    btmZombie = gbtmZombieDeath(3)
-                    intFrame = 4
-                Case 4
-                    btmZombie = gbtmZombieDeath(4)
-                    intFrame = 5
-                Case 5
-                    btmZombie = gbtmZombieDeath(5)
-                    'Stop timer and handler
-                    StopAndDispose()
-                    'Paint on top of the background
-                    blnPaintOnBackgroundAfterDead = True
-            End Select
-
         End If
 
     End Sub
 
-    Public ReadOnly Property PaintOnBackgroundAfterDead() As Boolean
+    Private Sub Animating()
+
+        'Continue
+        While True
+
+            'Check for first time pass dying
+            If blnFirstTimeDyingPass Then
+                'Set
+                blnFirstTimeDyingPass = False
+                'Declare
+                Dim rndNumber As New Random
+                'Play sound of death
+                Dim udcDeathSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "/Sounds/ZombieDeath" & CStr(rndNumber.Next(1, 4)) &
+                                                  ".mp3", 2000, gintSoundVolume)
+                'Set frame death
+                intFrameDeath = rndNumber.Next(1, 3)
+                'Change frame immediately
+                intFrame = 1
+                Select Case intFrameDeath
+                    Case 1
+                        btmZombie = gbtmZombieDeath1(0)
+                    Case 2
+                        btmZombie = gbtmZombieDeath2(0)
+                End Select
+            End If
+
+            'Check for first time pass pinning
+            If blnFirstTimePinningPass Then
+                'Set
+                blnFirstTimePinningPass = False
+                'Change frame immediately
+                intFrame = 1
+                btmZombie = gbtmZombiePin(0)
+            End If
+
+            'Sleep
+            System.Threading.Thread.Sleep(_intAnimatingDelay)
+
+            'Check frame, if walking, dying or pinning
+            If blnIsDying Then
+
+                'Check which frame death, sleep is 110
+                Select Case intFrameDeath
+                    Case 1
+                        If FrameDeath(gbtmZombieDeath1) Then
+                            'Exit
+                            Exit While
+                        End If
+                    Case 2
+                        If FrameDeath(gbtmZombieDeath2) Then
+                            'Exit
+                            Exit While
+                        End If
+                End Select
+
+            Else
+
+                'Pinning, sleep is 200
+                If blnIsPinning Then
+
+                    'Check frame
+                    Select Case intFrame
+                        Case 1
+                            intFrame = 2
+                            btmZombie = gbtmZombiePin(0)
+                        Case 2
+                            intFrame = 1
+                            btmZombie = gbtmZombiePin(1)
+                    End Select
+
+                Else
+
+                    'Walking, change point
+                    pntZombie.X = intSpotX
+                    intSpotX -= _intSpeed 'Speed they come at
+
+                    'Check if going forward or backwards with the frames (1, 2, 3, 4) or (3, 2, 1) but becomes (1, 2, 3, 4, 3, 2, 1, 2, 3, 4, etc.)
+                    If Not blnSwitch Then
+                        'Check frame
+                        Select Case intFrame 'Sleep here is 175 default
+                            Case 1
+                                intFrame = 2
+                                btmZombie = gbtmZombieWalk(0)
+                            Case 2
+                                intFrame = 3
+                                btmZombie = gbtmZombieWalk(1)
+                            Case 3
+                                intFrame = 4
+                                btmZombie = gbtmZombieWalk(2)
+                            Case 4
+                                intFrame = 1
+                                btmZombie = gbtmZombieWalk(3)
+                                'Switch up time
+                                blnSwitch = True
+                        End Select
+                    Else
+                        'Check frame
+                        Select Case intFrame
+                            Case 1
+                                intFrame = 2
+                                btmZombie = gbtmZombieWalk(2)
+                            Case 2
+                                intFrame = 1
+                                btmZombie = gbtmZombieWalk(1)
+                                'Switch up time
+                                blnSwitch = False
+                        End Select
+                    End If
+
+                End If
+
+            End If
+
+        End While
+
+    End Sub
+
+    Private Function FrameDeath(btmZombieDeath() As Bitmap) As Boolean
+
+        'Check frame
+        Select Case intFrame
+            Case 1
+                intFrame = 2
+                btmZombie = btmZombieDeath(1)
+            Case 2
+                intFrame = 3
+                btmZombie = btmZombieDeath(2)
+            Case 3
+                intFrame = 4
+                btmZombie = btmZombieDeath(3)
+            Case 4
+                intFrame = 5
+                btmZombie = btmZombieDeath(4)
+            Case 5
+                btmZombie = btmZombieDeath(5)
+                'Paint on top of the background
+                blnDead = True
+                'Return for exiting
+                Return True
+        End Select
+
+        'Return
+        Return False
+
+    End Function
+
+    Public ReadOnly Property IsDead() As Boolean
 
         'Return if ready to paint after death
         Get
-            Return blnPaintOnBackgroundAfterDead
+            Return blnDead
         End Get
 
     End Property
@@ -154,73 +277,49 @@ Public Class clsZombie
 
         'Return pinning or not
         Get
-            Return blnPinning
+            Return blnIsPinning
         End Get
 
     End Property
 
-    Public ReadOnly Property IsAlive() As Boolean
+    Public ReadOnly Property IsDying() As Boolean
 
-        'Return alive or not
+        'Return
         Get
-            Return blnAlive
+            Return blnIsDying
         End Get
 
     End Property
 
-    Public Sub Dead()
+    Public Sub Dying()
 
-        'Stop timer and change interval
-        sttTimer.Enabled = False
-        sttTimer.Interval = 150
-
-        'Set dead
-        blnAlive = False
-
-        'Change frame immediately
-        intFrame = 1
-        btmZombie = gbtmZombieDeath(0)
-
-        'Declare
-        Dim rndNumber As New Random
-
-        'Play sound of death
-        Dim udcDeathSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "/Sounds/ZombieDeath" & CStr(rndNumber.Next(1, 4)) &
-                                          ".mp3", 2000, gintSoundVolume)
-
-        'Start timer again
-        sttTimer.Enabled = True
+        'Check for no instance
+        If thrAnimating IsNot Nothing Then
+            'Abort thread
+            thrAnimating.Abort()
+            'Set
+            blnIsDying = True
+            'Set
+            blnFirstTimeDyingPass = True
+            'Restart thread
+            Start(110)
+        End If
 
     End Sub
 
     Public Sub Pin()
 
-        'Stop timer and change interval
-        sttTimer.Enabled = False
-        sttTimer.Interval = 200
-
-        'Set pinning
-        blnPinning = True
-
-        'Change frame immediately
-        intFrame = 1
-        btmZombie = gbtmZombiePin(0)
-
-        'Start timer again
-        sttTimer.Enabled = True
-
-    End Sub
-
-    Public Sub StopAndDispose()
-
-        'Stop timer
-        sttTimer.Enabled = False
-
-        'Remove handler
-        RemoveHandler sttTimer.Elapsed, AddressOf Animating
-
-        'Dispose
-        sttTimer.Dispose()
+        'Check for no instance
+        If thrAnimating IsNot Nothing Then
+            'Abort thread
+            thrAnimating.Abort()
+            'Set pinning
+            blnIsPinning = True
+            'Set
+            blnFirstTimePinningPass = True
+            'Restart thread
+            Start(200)
+        End If
 
     End Sub
 
