@@ -329,7 +329,7 @@ Public Class clsCharacter
                     End Select
                     'Play reloading sound
                     Select Case intFrame
-                        Case 29, 33, 37
+                        Case 32, 39, 41
                             Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
                     End Select
                     'Check if stop running
