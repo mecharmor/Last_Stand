@@ -176,6 +176,7 @@ Public Class frmGame
     Private btmDeathOverlay As Bitmap
     Private udcScreamSound As clsSound
     Private intZombieKills As Integer = 0
+    Private intCanvasMovementZombieDeathAdjustment As Integer = 0
 
     'Stop watch
     Private swhStopWatch As Stopwatch
@@ -800,11 +801,9 @@ Public Class frmGame
             'Draw dead zombies permanently
             For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
                 If audcZombies(intLoop).IsDead Then
-
-                    Debug.Print(CStr(audcZombies(intLoop).ZombiePoint.X))
-
+                    Dim pntTemp As New Point(audcZombies(intLoop).ZombiePoint.X + CInt(Math.Abs(pntGameBackground.X)), audcZombies(intLoop).ZombiePoint.Y)
                     'Draw dead
-                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, audcZombies(intLoop).ZombiePoint)
+                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, pntTemp)
                     'Increase count
                     intZombieKills += 1
                     'Add zombie
@@ -830,6 +829,7 @@ Public Class frmGame
                 'Draw zombies dying, pinning or walking
                 If Not audcZombies(intLoop).IsDead Then
                     If udcCharacter.IsRunning Then
+                        'Change
                         For intLoopRunning As Integer = 0 To audcZombies.GetUpperBound(0)
                             audcZombies(intLoopRunning).ZombiePoint = New Point(audcZombies(intLoopRunning).ZombiePoint.X - 5, audcZombies(intLoopRunning).ZombiePoint.Y)
                         Next
@@ -901,7 +901,8 @@ Public Class frmGame
         'Check for running
         If Not blnGameIsVersus Then
             If udcCharacter.IsRunning Then
-                pntGameBackground.X -= 15
+                'Change
+                pntGameBackground.X -= 20
             End If
         End If
 
@@ -1978,6 +1979,9 @@ Public Class frmGame
 
         'Set
         pntGameBackground.X = 0
+
+        'Set
+        intCanvasMovementZombieDeathAdjustment = 0
 
         'Load game objects
         LoadGameObjects(10)
@@ -3283,6 +3287,9 @@ Public Class frmGame
         'Set
         pntGameBackground.X = 0
 
+        'Set
+        intCanvasMovementZombieDeathAdjustment = 0
+
         'Load game objects
         LoadGameObjects(10)
 
@@ -3606,7 +3613,9 @@ Public Class frmGame
         Select Case e.KeyCode
             Case Keys.Right
                 If Not blnGameIsVersus Then
-                    udcCharacter.Running()
+                    If Not udcCharacter.IsRunning Then
+                        udcCharacter.Running()
+                    End If
                 End If
         End Select
 

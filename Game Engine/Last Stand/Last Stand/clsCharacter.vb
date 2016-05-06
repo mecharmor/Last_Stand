@@ -337,12 +337,6 @@ Public Class clsCharacter
                         intFrame = 4
                     End If
 
-                    'Case 42 'Keep running
-                    '    'Set
-                    '    blnIsRunning = True
-                    '    'Set
-                    '    blnFirstTimeRunningPass = True
-
             End Select
 
         End While
