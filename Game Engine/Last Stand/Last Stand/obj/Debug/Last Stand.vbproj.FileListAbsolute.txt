@@ -92,3 +92,13 @@ K:\Game Engine\Last_StandV0.6\Last Stand\bin\Debug\Last Stand.xml
 K:\Game Engine\Last_StandV0.6\Last Stand\obj\Debug\Last_Stand.frmGame.resources
 K:\Game Engine\Last_StandV0.6\Last Stand\obj\Debug\Last_Stand.Resources.resources
 K:\Game Engine\Last_StandV0.6\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache
+I:\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe.config
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.exe
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.xml
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.pdb
+I:\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe
+I:\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.pdb
+I:\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.xml
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.frmGame.resources
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.resources
+I:\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache

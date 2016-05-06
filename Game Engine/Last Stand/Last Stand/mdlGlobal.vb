@@ -13,15 +13,11 @@ Module mdlGlobal
     Public gintAlias As Integer = 0
     Public gintSoundVolume As Integer = 1000
 
-    'Used for reloading
-    Public gintBullet As Integer = 0
-    Public gintBulletOne As Integer = 0
-    Public gintBulletTwo As Integer = 0
-
     'Character
     Public gbtmCharacterStand(1) As Bitmap
     Public gbtmCharacterShoot(1) As Bitmap
     Public gbtmCharacterReload(21) As Bitmap
+    Public gbtmCharacterRunning(16) As Bitmap
     Public gbtmCharacterStandRed(1) As Bitmap
     Public gbtmCharacterShootRed(1) As Bitmap
     Public gbtmCharacterReloadRed(21) As Bitmap
@@ -34,6 +30,14 @@ Module mdlGlobal
     Public gbtmZombieDeath1(5) As Bitmap
     Public gbtmZombieDeath2(5) As Bitmap
     Public gbtmZombiePin(1) As Bitmap
+    Public gbtmZombieWalkRed(3) As Bitmap
+    Public gbtmZombieDeath1Red(5) As Bitmap
+    Public gbtmZombieDeath2Red(5) As Bitmap
+    Public gbtmZombiePinRed(1) As Bitmap
+    Public gbtmZombieWalkBlue(3) As Bitmap
+    Public gbtmZombieDeath1Blue(5) As Bitmap
+    Public gbtmZombieDeath2Blue(5) As Bitmap
+    Public gbtmZombiePinBlue(1) As Bitmap
 
     'Multiplayer versus
     Public gswClientData As IO.StreamWriter

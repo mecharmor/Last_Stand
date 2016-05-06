@@ -13,6 +13,7 @@ Public Class clsZombie
     Private intSpotY As Integer = 0
     Private _intSpeed As Integer = 25
     Private intFrameDeath As Integer = 0
+    Private _strThisObjectNameCorrespondingToCharacter As String = ""
 
     'Bitmaps
     Private btmZombie As Bitmap
@@ -32,14 +33,26 @@ Public Class clsZombie
 
     'Dead for painting on background
     Private blnDead As Boolean = False
+    Private _blnCanBecomeDead As Boolean = True
 
-    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, Optional blnStart As Boolean = False)
+    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
+                   Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
 
+        'Set
+        _strThisObjectNameCorrespondingToCharacter = strThisObjectNameCorrespondingToCharacter
+
         'Preset
-        btmZombie = gbtmZombieWalk(0)
+        Select Case _strThisObjectNameCorrespondingToCharacter
+            Case "udcCharacter"
+                btmZombie = gbtmZombieWalk(0)
+            Case "udcCharacterOne"
+                btmZombie = gbtmZombieWalkRed(0)
+            Case "udcCharacterTwo"
+                btmZombie = gbtmZombieWalkBlue(0)
+        End Select
 
         'Set
         _intSpeed = intSpeed
@@ -50,7 +63,7 @@ Public Class clsZombie
         pntZombie = New Point(intSpotX, intSpotY)
 
         'Start
-        If blnStart Then
+        If blnStartAnimation Then
             Start()
         End If
 
@@ -97,12 +110,17 @@ Public Class clsZombie
 
     End Property
 
-    Public ReadOnly Property ZombiePoint() As Point
+    Public Property ZombiePoint() As Point
 
         'Return
         Get
             Return pntZombie
         End Get
+
+        'Set
+        Set(value As Point)
+            pntZombie = value
+        End Set
 
     End Property
 
@@ -138,9 +156,23 @@ Public Class clsZombie
                 intFrame = 1
                 Select Case intFrameDeath
                     Case 1
-                        btmZombie = gbtmZombieDeath1(0)
+                        Select Case _strThisObjectNameCorrespondingToCharacter
+                            Case "udcCharacter"
+                                btmZombie = gbtmZombieDeath1(0)
+                            Case "udcCharacterOne"
+                                btmZombie = gbtmZombieDeath1Red(0)
+                            Case "udcCharacterTwo"
+                                btmZombie = gbtmZombieDeath1Blue(0)
+                        End Select
                     Case 2
-                        btmZombie = gbtmZombieDeath2(0)
+                        Select Case _strThisObjectNameCorrespondingToCharacter
+                            Case "udcCharacter"
+                                btmZombie = gbtmZombieDeath2(0)
+                            Case "udcCharacterOne"
+                                btmZombie = gbtmZombieDeath2Red(0)
+                            Case "udcCharacterTwo"
+                                btmZombie = gbtmZombieDeath2Blue(0)
+                        End Select
                 End Select
             End If
 
@@ -150,7 +182,14 @@ Public Class clsZombie
                 blnFirstTimePinningPass = False
                 'Change frame immediately
                 intFrame = 1
-                btmZombie = gbtmZombiePin(0)
+                Select Case _strThisObjectNameCorrespondingToCharacter
+                    Case "udcCharacter"
+                        btmZombie = gbtmZombiePin(0)
+                    Case "udcCharacterOne"
+                        btmZombie = gbtmZombiePinRed(0)
+                    Case "udcCharacterTwo"
+                        btmZombie = gbtmZombiePinBlue(0)
+                End Select
             End If
 
             'Sleep
@@ -162,16 +201,29 @@ Public Class clsZombie
                 'Check which frame death, sleep is 110
                 Select Case intFrameDeath
                     Case 1
-                        If FrameDeath(gbtmZombieDeath1) Then
-                            'Exit
-                            Exit While
-                        End If
+                        Select Case _strThisObjectNameCorrespondingToCharacter
+                            Case "udcCharacter"
+                                FrameDeath(gbtmZombieDeath1)
+                            Case "udcCharacterOne"
+                                FrameDeath(gbtmZombieDeath1Red)
+                            Case "udcCharacterTwo"
+                                FrameDeath(gbtmZombieDeath1Blue)
+                        End Select
                     Case 2
-                        If FrameDeath(gbtmZombieDeath2) Then
-                            'Exit
-                            Exit While
-                        End If
+                        Select Case _strThisObjectNameCorrespondingToCharacter
+                            Case "udcCharacter"
+                                FrameDeath(gbtmZombieDeath2)
+                            Case "udcCharacterOne"
+                                FrameDeath(gbtmZombieDeath2Red)
+                            Case "udcCharacterTwo"
+                                FrameDeath(gbtmZombieDeath2Blue)
+                        End Select
                 End Select
+
+                'Check for completely dead
+                If blnDead Then
+                    Exit While
+                End If
 
             Else
 
@@ -182,17 +234,30 @@ Public Class clsZombie
                     Select Case intFrame
                         Case 1
                             intFrame = 2
-                            btmZombie = gbtmZombiePin(0)
+                            Select Case _strThisObjectNameCorrespondingToCharacter
+                                Case "udcCharacter"
+                                    btmZombie = gbtmZombiePin(0)
+                                Case "udcCharacterOne"
+                                    btmZombie = gbtmZombiePinRed(0)
+                                Case "udcCharacterTwo"
+                                    btmZombie = gbtmZombiePinBlue(0)
+                            End Select
                         Case 2
                             intFrame = 1
-                            btmZombie = gbtmZombiePin(1)
+                            Select Case _strThisObjectNameCorrespondingToCharacter
+                                Case "udcCharacter"
+                                    btmZombie = gbtmZombiePin(1)
+                                Case "udcCharacterOne"
+                                    btmZombie = gbtmZombiePinRed(1)
+                                Case "udcCharacterTwo"
+                                    btmZombie = gbtmZombiePinBlue(1)
+                            End Select
                     End Select
 
                 Else
 
                     'Walking, change point
-                    pntZombie.X = intSpotX
-                    intSpotX -= _intSpeed 'Speed they come at
+                    pntZombie.X -= _intSpeed 'Speed they come at
 
                     'Check if going forward or backwards with the frames (1, 2, 3, 4) or (3, 2, 1) but becomes (1, 2, 3, 4, 3, 2, 1, 2, 3, 4, etc.)
                     If Not blnSwitch Then
@@ -200,16 +265,44 @@ Public Class clsZombie
                         Select Case intFrame 'Sleep here is 175 default
                             Case 1
                                 intFrame = 2
-                                btmZombie = gbtmZombieWalk(0)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(0)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(0)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(0)
+                                End Select
                             Case 2
                                 intFrame = 3
-                                btmZombie = gbtmZombieWalk(1)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(1)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(1)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(1)
+                                End Select
                             Case 3
                                 intFrame = 4
-                                btmZombie = gbtmZombieWalk(2)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(2)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(2)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(2)
+                                End Select
                             Case 4
                                 intFrame = 1
-                                btmZombie = gbtmZombieWalk(3)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(3)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(3)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(3)
+                                End Select
                                 'Switch up time
                                 blnSwitch = True
                         End Select
@@ -218,10 +311,24 @@ Public Class clsZombie
                         Select Case intFrame
                             Case 1
                                 intFrame = 2
-                                btmZombie = gbtmZombieWalk(2)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(2)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(2)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(2)
+                                End Select
                             Case 2
                                 intFrame = 1
-                                btmZombie = gbtmZombieWalk(1)
+                                Select Case _strThisObjectNameCorrespondingToCharacter
+                                    Case "udcCharacter"
+                                        btmZombie = gbtmZombieWalk(1)
+                                    Case "udcCharacterOne"
+                                        btmZombie = gbtmZombieWalkRed(1)
+                                    Case "udcCharacterTwo"
+                                        btmZombie = gbtmZombieWalkBlue(1)
+                                End Select
                                 'Switch up time
                                 blnSwitch = False
                         End Select
@@ -235,7 +342,7 @@ Public Class clsZombie
 
     End Sub
 
-    Private Function FrameDeath(btmZombieDeath() As Bitmap) As Boolean
+    Private Sub FrameDeath(btmZombieDeath() As Bitmap)
 
         'Check frame
         Select Case intFrame
@@ -254,22 +361,33 @@ Public Class clsZombie
             Case 5
                 btmZombie = btmZombieDeath(5)
                 'Paint on top of the background
-                blnDead = True
-                'Return for exiting
-                Return True
+                If _blnCanBecomeDead Then
+                    blnDead = True 'Only ignored if in multiplayer versus for joiner
+                End If
         End Select
 
-        'Return
-        Return False
+    End Sub
 
-    End Function
+    Public Property IsDead() As Boolean
 
-    Public ReadOnly Property IsDead() As Boolean
+        'Notes: Can only set to dead once and cannot set to undead.
 
         'Return if ready to paint after death
         Get
             Return blnDead
         End Get
+
+        'Set
+        Set(value As Boolean)
+            If value <> False Then
+                'Set first
+                If blnIsDying <> True Then
+                    blnIsDying = True
+                End If
+                'Set
+                blnDead = value 'Used only in multiplayer versus for joiner
+            End If
+        End Set
 
     End Property
 
@@ -291,10 +409,12 @@ Public Class clsZombie
 
     End Property
 
-    Public Sub Dying()
+    Public Sub Dying(Optional blnCanBecomeDead As Boolean = True)
 
         'Check for no instance
         If thrAnimating IsNot Nothing Then
+            'Set
+            _blnCanBecomeDead = blnCanBecomeDead
             'Abort thread
             thrAnimating.Abort()
             'Set

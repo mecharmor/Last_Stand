@@ -11,6 +11,8 @@ Public Class clsCharacter
     Private intSpotX As Integer = 0
     Private intSpotY As Integer = 0
     Private _strThisObjectName As String = ""
+    Private _intBullets As Integer = 0 'Gun bullets
+    Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
 
     'Bitmaps
     Private btmCharacter As Bitmap
@@ -28,7 +30,10 @@ Public Class clsCharacter
     Private blnIsReloading As Boolean = False
     Private blnNeedsToShowReloading As Boolean = False
     Private blnFirstTimeReloadingPass As Boolean = False
-    Private blnDontSendData As Boolean = False
+
+    'Running
+    Private blnIsRunning As Boolean = False
+    Private blnFirstTimeRunningPass As Boolean = False
 
     'Reload sound
     Private udcReloadingSound As clsSound
@@ -36,13 +41,20 @@ Public Class clsCharacter
     'Reload count
     Private intReloadTimes As Integer = 0
 
-    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, Optional blnStart As Boolean = False)
+    'Send data
+    Private blnSendData As Boolean = False
+
+    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, Optional blnImitation As Boolean = False,
+                   Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
 
         'Set
         _strThisObjectName = strThisObjectName
+
+        'Set
+        _blnImitation = blnImitation
 
         'Preset
         Select Case _strThisObjectName
@@ -60,7 +72,7 @@ Public Class clsCharacter
         pntCharacter = New Point(intSpotX, intSpotY)
 
         'Start
-        If blnStart Then
+        If blnStartAnimation Then
             Start()
         End If
 
@@ -138,6 +150,8 @@ Public Class clsCharacter
 
             'Check for first time pass shooting
             If blnFirstTimeShootingPass Then
+                'Default
+                pntCharacter.X = intSpotX
                 'Set
                 blnFirstTimeShootingPass = False
                 'Play shot sound
@@ -156,6 +170,8 @@ Public Class clsCharacter
 
             'Check for first time pass reloading
             If blnFirstTimeReloadingPass Then
+                'Default
+                pntCharacter.X = intSpotX
                 'Set
                 blnFirstTimeReloadingPass = False
                 'Play reloading sound
@@ -169,6 +185,21 @@ Public Class clsCharacter
                         btmCharacter = gbtmCharacterReloadRed(0)
                     Case "udcCharacterTwo"
                         btmCharacter = gbtmCharacterReloadBlue(0)
+                End Select
+            End If
+
+            'Check for first time pass running
+            If blnFirstTimeRunningPass Then
+                'Set
+                blnFirstTimeRunningPass = False
+                'Change frame immediately
+                intFrame = 26
+                'Move point
+                pntCharacter.X = -40
+                'Show
+                Select Case _strThisObjectName
+                    Case "udcCharacter"
+                        btmCharacter = gbtmCharacterRunning(0)
                 End Select
             End If
 
@@ -189,6 +220,7 @@ Public Class clsCharacter
                         Case "udcCharacterTwo"
                             btmCharacter = gbtmCharacterStandBlue(1)
                     End Select
+
                 Case 2
                     'Set frame
                     intFrame = 1
@@ -214,17 +246,13 @@ Public Class clsCharacter
                     End Select
 
                 Case 4 'Neutral to get back to standing
+                    'Reset if running
+                    blnIsRunning = False
+                    pntCharacter.X = intSpotX
                     'Check if needs to reload first
                     If blnNeedsToShowReloading Then
                         'Send data
-                        Select Case _strThisObjectName
-                            Case "udcCharacterOne", "udcCharacterTwo"
-                                If blnDontSendData Then
-                                    blnDontSendData = False
-                                Else
-                                    gSendData("4|")
-                                End If
-                        End Select
+                        SendData()
                         'Set
                         blnIsShooting = False
                         blnIsReloading = True
@@ -275,6 +303,7 @@ Public Class clsCharacter
                         Case "udcCharacterTwo"
                             btmCharacter = gbtmCharacterReloadBlue(intFrame - 5)
                     End Select
+
                 Case 25
                     'Set frame
                     intFrame = 4 'Goes back to neutral standing
@@ -287,14 +316,32 @@ Public Class clsCharacter
                             btmCharacter = gbtmCharacterReloadBlue(21)
                     End Select
                     'Reset bullets
+                    _intBullets = 0
+
+                Case 26 To 41
+                    'Set frame
+                    intFrame += 1
+                    'Move point
+                    pntCharacter.X = -40
                     Select Case _strThisObjectName
                         Case "udcCharacter"
-                            gintBullet = 0
-                        Case "udcCharacterOne"
-                            gintBulletOne = 0
-                        Case "udcCharacterTwo"
-                            gintBulletTwo = 0
+                            btmCharacter = gbtmCharacterRunning(intFrame - 26) '27 - 26 = 1 in the array
                     End Select
+                    'Play reloading sound
+                    Select Case intFrame
+                        Case 29, 33, 37
+                            Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
+                    End Select
+                    'Check if stop running
+                    If intFrame = 42 Then
+                        intFrame = 4
+                    End If
+
+                    'Case 42 'Keep running
+                    '    'Set
+                    '    blnIsRunning = True
+                    '    'Set
+                    '    blnFirstTimeRunningPass = True
 
             End Select
 
@@ -302,31 +349,35 @@ Public Class clsCharacter
 
     End Sub
 
+    Private Sub SendData()
+
+        'Send data
+        If blnSendData Then
+            'Send
+            gSendData("5|")
+            'Set
+            blnSendData = False
+        End If
+
+    End Sub
+
     Public Sub Shot()
 
         'Check for instance
         If thrAnimating IsNot Nothing Then
-            'Increase
-            Select Case _strThisObjectName
-                Case "udcCharacter"
-                    gintBullet += 1
-                    'Set
-                    If gintBullet >= 30 Then
-                        blnNeedsToShowReloading = True
+            'Check if not imitation
+            If Not _blnImitation Then
+                'Increase bullet
+                _intBullets += 1
+                'Check if wasted all ammo
+                If _intBullets = 30 Then
+                    'Send data if
+                    If _strThisObjectName <> "udcCharacter" Then
+                        PrepareSendData = True
                     End If
-                Case "udcCharacterOne"
-                    gintBulletOne += 1
-                    'Set
-                    If gintBulletOne >= 30 Then
-                        blnNeedsToShowReloading = True
-                    End If
-                Case "udcCharacterTwo"
-                    gintBulletTwo += 1
-                    'Set
-                    If gintBulletTwo >= 30 Then
-                        blnNeedsToShowReloading = True
-                    End If
-            End Select
+                    blnNeedsToShowReloading = True
+                End If
+            End If
             'Abort thread
             thrAnimating.Abort()
             'Set
@@ -349,14 +400,7 @@ Public Class clsCharacter
             'Check for instance
             If thrAnimating IsNot Nothing Then
                 'Send data
-                Select Case _strThisObjectName
-                    Case "udcCharacterOne", "udcCharacterTwo"
-                        If blnDontSendData Then
-                            blnDontSendData = False
-                        Else
-                            gSendData("4|")
-                        End If
-                End Select
+                SendData()
                 'Abort thread
                 thrAnimating.Abort()
                 'Set
@@ -371,6 +415,15 @@ Public Class clsCharacter
         End If
 
     End Sub
+
+    Public ReadOnly Property BulletsUsed() As Integer
+
+        'Return
+        Get
+            Return _intBullets
+        End Get
+
+    End Property
 
     Public ReadOnly Property ReloadTimes() As Integer
 
@@ -399,11 +452,20 @@ Public Class clsCharacter
 
     End Property
 
-    Public WriteOnly Property DontSendData() As Boolean
+    Public ReadOnly Property IsRunning() As Boolean
+
+        'Return
+        Get
+            Return blnIsRunning
+        End Get
+
+    End Property
+
+    Public WriteOnly Property PrepareSendData() As Boolean
 
         'Set
         Set(value As Boolean)
-            blnDontSendData = value
+            blnSendData = value
         End Set
 
     End Property
@@ -413,6 +475,22 @@ Public Class clsCharacter
         'Stop sound
         If udcReloadingSound IsNot Nothing Then
             udcReloadingSound.StopAndCloseSound()
+        End If
+
+    End Sub
+
+    Public Sub Running()
+
+        'Check for instance
+        If thrAnimating IsNot Nothing Then
+            'Abort thread
+            thrAnimating.Abort()
+            'Set
+            blnIsRunning = True
+            'Set
+            blnFirstTimeRunningPass = True
+            'Restart thread
+            Start(80)
         End If
 
     End Sub
