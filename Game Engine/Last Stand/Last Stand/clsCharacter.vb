@@ -34,6 +34,7 @@ Public Class clsCharacter
     'Running
     Private blnIsRunning As Boolean = False
     Private blnFirstTimeRunningPass As Boolean = False
+    Private blnPrepareToRun As Boolean = False
 
     'Reload sound
     Private udcReloadingSound As clsSound
@@ -246,50 +247,69 @@ Public Class clsCharacter
                     End Select
 
                 Case 4 'Neutral to get back to standing
-                    'Reset if running
-                    blnIsRunning = False
-                    pntCharacter.X = intSpotX
-                    'Check if needs to reload first
-                    If blnNeedsToShowReloading Then
-                        'Send data
-                        SendData()
+                    'Check for running
+                    If blnPrepareToRun Then
                         'Set
-                        blnIsShooting = False
-                        blnIsReloading = True
+                        blnIsRunning = True
                         'Set
-                        blnNeedsToShowReloading = False
+                        _intAnimatingDelay = 80
                         'Set
-                        _intAnimatingDelay = 100
-                        'Play reloading sound
-                        udcReloadingSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Reloading.mp3", 3000, gintSoundVolume)
+                        blnPrepareToRun = False
                         'Change frame immediately
-                        intFrame = 5
+                        intFrame = 26
+                        'Move point
+                        pntCharacter.X = -40
+                        'Show
                         Select Case _strThisObjectName
                             Case "udcCharacter"
-                                btmCharacter = gbtmCharacterReload(0)
-                            Case "udcCharacterOne"
-                                btmCharacter = gbtmCharacterReloadRed(0)
-                            Case "udcCharacterTwo"
-                                btmCharacter = gbtmCharacterReloadBlue(0)
+                                btmCharacter = gbtmCharacterRunning(0)
                         End Select
-                        'Increase
-                        intReloadTimes += 1
                     Else
-                        'Change sleep
-                        _intAnimatingDelay = 3000
-                        'Set
-                        blnIsShooting = False
-                        blnIsReloading = False
-                        'Set frame
-                        intFrame = 1
-                        Select Case _strThisObjectName
-                            Case "udcCharacter"
-                                btmCharacter = gbtmCharacterStand(0)
-                            Case "udcCharacterOne"
-                                btmCharacter = gbtmCharacterStandRed(0)
-                            Case "udcCharacterTwo"
-                                btmCharacter = gbtmCharacterStandBlue(0)
-                        End Select
+                        'Reset if running
+                        blnIsRunning = False
+                        pntCharacter.X = intSpotX
+                        'Check if needs to reload first
+                        If blnNeedsToShowReloading Then
+                            'Send data
+                            SendData()
+                            'Set
+                            blnIsShooting = False
+                            blnIsReloading = True
+                            'Set
+                            blnNeedsToShowReloading = False
+                            'Set
+                            _intAnimatingDelay = 100
+                            'Play reloading sound
+                            udcReloadingSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Reloading.mp3", 3000, gintSoundVolume)
+                            'Change frame immediately
+                            intFrame = 5
+                            Select Case _strThisObjectName
+                                Case "udcCharacter"
+                                    btmCharacter = gbtmCharacterReload(0)
+                                Case "udcCharacterOne"
+                                    btmCharacter = gbtmCharacterReloadRed(0)
+                                Case "udcCharacterTwo"
+                                    btmCharacter = gbtmCharacterReloadBlue(0)
+                            End Select
+                            'Increase
+                            intReloadTimes += 1
+                        Else
+                            'Change sleep
+                            _intAnimatingDelay = 3000
+                            'Set
+                            blnIsShooting = False
+                            blnIsReloading = False
+                            'Set frame
+                            intFrame = 1
+                            Select Case _strThisObjectName
+                                Case "udcCharacter"
+                                    btmCharacter = gbtmCharacterStand(0)
+                                Case "udcCharacterOne"
+                                    btmCharacter = gbtmCharacterStandRed(0)
+                                Case "udcCharacterTwo"
+                                    btmCharacter = gbtmCharacterStandBlue(0)
+                            End Select
+                        End If
                     End If
 
                 Case 5 To 24 'Reloading, sleep here is 100
@@ -359,6 +379,8 @@ Public Class clsCharacter
 
         'Check for instance
         If thrAnimating IsNot Nothing Then
+            'Set
+            blnIsRunning = False
             'Check if not imitation
             If Not _blnImitation Then
                 'Increase bullet
@@ -391,6 +413,8 @@ Public Class clsCharacter
             'Set
             blnNeedsToShowReloading = True
         Else
+            'Set
+            blnIsRunning = False
             'Check for instance
             If thrAnimating IsNot Nothing Then
                 'Send data
@@ -452,6 +476,15 @@ Public Class clsCharacter
         Get
             Return blnIsRunning
         End Get
+
+    End Property
+
+    Public WriteOnly Property PrepareToRun() As Boolean
+
+        'Return
+        Set(value As Boolean)
+            blnPrepareToRun = value
+        End Set
 
     End Property
 

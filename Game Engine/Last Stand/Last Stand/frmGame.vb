@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAMEVERSION As String = "1.08"
+    Private Const GAMEVERSION As String = "1.09"
     Private Const ORIGINALSCREENWIDTH As Integer = 1680
     Private Const ORIGINALSCREENHEIGHT As Integer = 1050
     Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -20,6 +20,8 @@ Public Class frmGame
     Private Const FOGMAXDELAY As Integer = 100
     Private Const LOADINGTRANSPARENCYDELAY As Integer = 400
     Private Const ENDGAMEDELAYBLACKSCREEN As Integer = 500
+    Private Const NUMBEROFZOMBIESCREATED As Integer = 150
+    Private Const NUMBEROFZOMBIESATONETIME As Integer = 5
 
     'Declare beginning necessary engine needs
     Private intScreenWidth As Integer = 800
@@ -166,7 +168,7 @@ Public Class frmGame
     Private btmWordBar As Bitmap
     Private pntWordBar As New Point(482, 27)
     Private udcCharacter As clsCharacter
-    Private audcZombies(4) As clsZombie
+    Private audcZombies() As clsZombie
     Private intZombieSpeed As Integer = 15 ' Default
     Private blnBackFromGame As Boolean = False
     Private blnGameOverFirstTime As Boolean = False
@@ -176,7 +178,6 @@ Public Class frmGame
     Private btmDeathOverlay As Bitmap
     Private udcScreamSound As clsSound
     Private intZombieKills As Integer = 0
-    Private intCanvasMovementZombieDeathAdjustment As Integer = 0
 
     'Stop watch
     Private swhStopWatch As Stopwatch
@@ -266,8 +267,8 @@ Public Class frmGame
     Private udcCharacterTwo As clsCharacter 'Join
     Private intZombieSpeedOne As Integer = 0
     Private intZombieSpeedTwo As Integer = 0
-    Private audcZombiesOne(4) As clsZombie
-    Private audcZombiesTwo(4) As clsZombie
+    Private audcZombiesOne() As clsZombie
+    Private audcZombiesTwo() As clsZombie
     Private btmYouWon As Bitmap
     Private pntYouWon As New Point(498, 875)
     Private btmYouLost As Bitmap
@@ -462,12 +463,14 @@ Public Class frmGame
         End If
 
         'Stop and dispose zombies
-        For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
-            If audcZombies(intLoop) IsNot Nothing Then
-                audcZombies(intLoop).StopAndDispose()
-                audcZombies(intLoop) = Nothing
-            End If
-        Next
+        If audcZombies IsNot Nothing Then
+            For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+                If audcZombies(intLoop) IsNot Nothing Then
+                    audcZombies(intLoop).StopAndDispose()
+                    audcZombies(intLoop) = Nothing
+                End If
+            Next
+        End If
 
         'Stop and dispose versus characters, remove handler
         If udcCharacterOne IsNot Nothing Then
@@ -486,18 +489,22 @@ Public Class frmGame
         End If
 
         'Stop and dispose zombies
-        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
-            If audcZombiesOne(intLoop) IsNot Nothing Then
-                audcZombiesOne(intLoop).StopAndDispose()
-                audcZombiesOne(intLoop) = Nothing
-            End If
-        Next
-        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
-            If audcZombiesTwo(intLoop) IsNot Nothing Then
-                audcZombiesTwo(intLoop).StopAndDispose()
-                audcZombiesTwo(intLoop) = Nothing
-            End If
-        Next
+        If audcZombiesOne IsNot Nothing Then
+            For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+                If audcZombiesOne(intLoop) IsNot Nothing Then
+                    audcZombiesOne(intLoop).StopAndDispose()
+                    audcZombiesOne(intLoop) = Nothing
+                End If
+            Next
+        End If
+        If audcZombiesTwo IsNot Nothing Then
+            For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+                If audcZombiesTwo(intLoop) IsNot Nothing Then
+                    audcZombiesTwo(intLoop).StopAndDispose()
+                    audcZombiesTwo(intLoop) = Nothing
+                End If
+            Next
+        End If
 
     End Sub
 
@@ -800,14 +807,19 @@ Public Class frmGame
 
             'Draw dead zombies permanently
             For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
-                If audcZombies(intLoop).IsDead Then
-                    Dim pntTemp As New Point(audcZombies(intLoop).ZombiePoint.X + CInt(Math.Abs(pntGameBackground.X)), audcZombies(intLoop).ZombiePoint.Y)
-                    'Draw dead
-                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, pntTemp)
-                    'Increase count
-                    intZombieKills += 1
-                    'Add zombie
-                    UseZombieWave(intZombieKills, audcZombies, intLoop, ORIGINALSCREENWIDTH, 325, intZombieSpeed, "udcCharacter")
+                If audcZombies(intLoop) IsNot Nothing Then
+                    If audcZombies(intLoop).IsDead Then
+                        Dim pntTemp As New Point(audcZombies(intLoop).ZombiePoint.X + CInt(Math.Abs(pntGameBackground.X)), audcZombies(intLoop).ZombiePoint.Y)
+                        'Draw dead
+                        gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, pntTemp)
+                        'Remove zombie
+                        audcZombies(intLoop).StopAndDispose()
+                        audcZombies(intLoop) = Nothing
+                        'Increase count
+                        intZombieKills += 1
+                        'Start a new zombie
+                        audcZombies(intZombieKills + NUMBEROFZOMBIESATONETIME - 1).Start()
+                    End If
                 End If
             Next
 
@@ -817,24 +829,33 @@ Public Class frmGame
             'Draw character
             gGraphics.DrawImageUnscaled(udcCharacter.CharacterImage, udcCharacter.CharacterPoint)
 
+            'Change point for zombie if running
+            If udcCharacter.IsRunning Then
+                For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+                    If audcZombies(intLoop) IsNot Nothing Then
+                        If audcZombies(intLoop).Spawned Then
+                            If Not audcZombies(intLoop).IsDead Then
+                                audcZombies(intLoop).ZombiePoint = New Point(audcZombies(intLoop).ZombiePoint.X - 25, audcZombies(intLoop).ZombiePoint.Y)
+                            End If
+                        End If
+                    End If
+                Next
+            End If
+
             'Draw zombies
             For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
-                'Check distance
-                If audcZombies(intLoop).ZombiePoint.X <= 200 And Not audcZombies(intLoop).IsPinning Then
-                    'Set
-                    audcZombies(intLoop).Pin()
-                    'Check for first time pin
-                    CheckingForFirstTimePin(False)
-                End If
-                'Draw zombies dying, pinning or walking
-                If Not audcZombies(intLoop).IsDead Then
-                    If udcCharacter.IsRunning Then
-                        'Change
-                        For intLoopRunning As Integer = 0 To audcZombies.GetUpperBound(0)
-                            audcZombies(intLoopRunning).ZombiePoint = New Point(audcZombies(intLoopRunning).ZombiePoint.X - 5, audcZombies(intLoopRunning).ZombiePoint.Y)
-                        Next
+                If audcZombies(intLoop) IsNot Nothing Then
+                    If audcZombies(intLoop).Spawned Then
+                        'Check distance
+                        If audcZombies(intLoop).ZombiePoint.X <= 200 And Not audcZombies(intLoop).IsPinning Then
+                            'Set
+                            audcZombies(intLoop).Pin()
+                            'Check for first time pin
+                            CheckingForFirstTimePin(False)
+                        End If
+                        'Draw zombies dying, pinning or walking
+                        gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, audcZombies(intLoop).ZombiePoint)
                     End If
-                    gGraphics.DrawImageUnscaled(audcZombies(intLoop).ZombieImage, audcZombies(intLoop).ZombiePoint)
                 End If
             Next
 
@@ -850,16 +871,16 @@ Public Class frmGame
                 gGraphics.DrawImageUnscaled(btmEndGame, pntTopLeft)
             End If
 
-        End If
+            End If
 
-        'Back button
-        If intCanvasShow = 1 Then
-            'Draw back text as hovered
-            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
-        Else
-            'Draw back text
-            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
-        End If
+            'Back button
+            If intCanvasShow = 1 Then
+                'Draw back text as hovered
+                gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+            Else
+                'Draw back text
+                gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+            End If
 
     End Sub
 
@@ -963,67 +984,6 @@ Public Class frmGame
                 End If
             End If
         End If
-
-    End Sub
-
-    Private Sub UseZombieWave(intZombieKillsType As Integer, audcZombiesType() As clsZombie, intIndex As Integer, intX As Integer, intY As Integer,
-                              intWalkingSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String)
-
-        'Check number of zombies killed
-        Select Case strThisObjectNameCorrespondingToCharacter
-            Case "udcCharacter"
-                Select Case intZombieKillsType
-                    Case 1 To 4, 6 To 9, 11 To 14, 16 To 19, 21 To 24, 26 To 29
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed, strThisObjectNameCorrespondingToCharacter)
-                    Case 5, 10, 15, 20, 25, 30
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                    Case 31 To 33, 36 To 38, 41 To 43, 46 To 48, 51 To 53, 56 To 58
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 5, strThisObjectNameCorrespondingToCharacter)
-                    Case 34, 35, 39, 40, 44, 45, 49, 50
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                    Case Else
-                        If intZombieKills <> 50 Then
-                            'Re-create a new zombie
-                            ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                        End If
-                End Select
-            Case Else
-                Select Case intZombieKillsType
-                    Case 1 To 4, 6 To 9, 11 To 14, 16 To 19, 21 To 24, 26 To 29
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed, strThisObjectNameCorrespondingToCharacter)
-                    Case 5, 10, 15, 20, 25, 30
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                    Case 31 To 33, 36 To 38, 41 To 43, 46 To 48, 51 To 53, 56 To 58
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 5, strThisObjectNameCorrespondingToCharacter)
-                    Case 34, 35, 39, 40, 44, 45, 49, 50, 54, 55, 59, 60
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                    Case 61, 62, 66, 67, 71, 72, 76, 77, 81, 82, 86, 87
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 10, strThisObjectNameCorrespondingToCharacter)
-                    Case 63 To 65, 68 To 70, 73 To 75, 78 To 80, 83 To 85, 88 To 90
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                    Case Else
-                        'Re-create a new zombie
-                        ReCreateZombie(audcZombiesType, intIndex, intX, intY, intWalkingSpeed + 45, strThisObjectNameCorrespondingToCharacter)
-                End Select
-        End Select
-
-    End Sub
-
-    Private Sub ReCreateZombie(audcZombiesType() As clsZombie, intIndex As Integer, intX As Integer, intY As Integer, intWalkingSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String)
-
-        'Create a new zombie
-        audcZombiesType(intIndex) = New clsZombie(Me, intX, intY, intWalkingSpeed, strThisObjectNameCorrespondingToCharacter)
-        audcZombiesType(intIndex).Start()
 
     End Sub
 
@@ -1303,33 +1263,45 @@ Public Class frmGame
 
             'Draw dead zombies permanently
             For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
-                If audcZombiesOne(intLoop).IsDead Then
-                    'Check if hosting
-                    If blnHost Then
-                        'Send data
-                        gSendData("6|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
+                If audcZombiesOne(intLoop) IsNot Nothing Then
+                    If audcZombiesOne(intLoop).IsDead Then
+                        'Check if hosting
+                        If blnHost Then
+                            'Send data
+                            gSendData("6|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
+                        End If
+                        Dim pntTemp As New Point(audcZombiesOne(intLoop).ZombiePoint.X + CInt(Math.Abs(pntGameBackground.X)), audcZombiesOne(intLoop).ZombiePoint.Y)
+                        'Draw dead
+                        gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).ZombieImage, pntTemp)
+                        'Remove zombie
+                        audcZombiesOne(intLoop).StopAndDispose()
+                        audcZombiesOne(intLoop) = Nothing
+                        'Increase count
+                        intZombieKillsOne += 1
+                        'Start a new zombie
+                        audcZombiesOne(intZombieKillsOne + NUMBEROFZOMBIESATONETIME - 1).Start()
                     End If
-                    'Draw dead
-                    gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).ZombieImage, audcZombiesOne(intLoop).ZombiePoint)
-                    'Increase
-                    intZombieKillsOne += 1
-                    'Add zombie
-                    UseZombieWave(intZombieKillsOne, audcZombiesOne, intLoop, ORIGINALSCREENWIDTH, 300, intZombieSpeedOne, "udcCharacterOne")
                 End If
             Next
             For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
-                If audcZombiesTwo(intLoop).IsDead Then
-                    'Check if hosting
-                    If blnHost Then
-                        'Send data
-                        gSendData("7|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
+                If audcZombiesTwo(intLoop) IsNot Nothing Then
+                    If audcZombiesTwo(intLoop).IsDead Then
+                        'Check if hosting
+                        If blnHost Then
+                            'Send data
+                            gSendData("7|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
+                        End If
+                        Dim pntTemp As New Point(audcZombiesTwo(intLoop).ZombiePoint.X + CInt(Math.Abs(pntGameBackground.X)), audcZombiesTwo(intLoop).ZombiePoint.Y)
+                        'Draw dead
+                        gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).ZombieImage, pntTemp)
+                        'Remove zombie
+                        audcZombiesTwo(intLoop).StopAndDispose()
+                        audcZombiesTwo(intLoop) = Nothing
+                        'Increase count
+                        intZombieKillsTwo += 1
+                        'Start a new zombie
+                        audcZombiesTwo(intZombieKillsTwo + NUMBEROFZOMBIESATONETIME - 1).Start()
                     End If
-                    'Draw dead
-                    gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).ZombieImage, audcZombiesTwo(intLoop).ZombiePoint)
-                    'Increase
-                    intZombieKillsTwo += 1
-                    'Add zombie
-                    UseZombieWave(intZombieKillsTwo, audcZombiesTwo, intLoop, ORIGINALSCREENWIDTH, 350, intZombieSpeedTwo, "udcCharacterTwo")
                 End If
             Next
 
@@ -1339,66 +1311,46 @@ Public Class frmGame
             'Draw character hoster
             gGraphics.DrawImageUnscaled(udcCharacterOne.CharacterImage, udcCharacterOne.CharacterPoint)
 
-            'Draw zombies
-            If blnHost Then
-                'First horde of zombies for hoster
-                For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
-                    'Check distance
-                    If audcZombiesOne(intLoop).ZombiePoint.X <= 200 And Not audcZombiesOne(intLoop).IsPinning Then
-                        'Set
-                        audcZombiesOne(intLoop).Pin()
-                        'Check for first time pin
-                        CheckingForFirstTimePin(False, "8|") 'Joiner won
-                    End If
-                    'Draw zombies dying, pinning or walking
-                    If Not audcZombiesOne(intLoop).IsDead Then
+            'First horde of zombies for hoster
+            For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+                If audcZombiesOne(intLoop) IsNot Nothing Then
+                    If audcZombiesOne(intLoop).Spawned Then
+                        'Check distance
+                        If audcZombiesOne(intLoop).ZombiePoint.X <= 200 And Not audcZombiesOne(intLoop).IsPinning Then
+                            'Set
+                            audcZombiesOne(intLoop).Pin()
+                            If blnHost Then
+                                'Check for first time pin
+                                CheckingForFirstTimePin(False, "8|") 'Joiner won
+                            End If
+                        End If
+                        'Draw zombies dying, pinning or walking
                         gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).ZombieImage, audcZombiesOne(intLoop).ZombiePoint)
                     End If
-                Next
-                'Draw character joiner
-                gGraphics.DrawImageUnscaled(udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
-                'Second horde of zombies for joiner
-                For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
-                    'Check distance
-                    If audcZombiesTwo(intLoop).ZombiePoint.X <= 250 And Not audcZombiesTwo(intLoop).IsPinning Then
-                        'Set
-                        audcZombiesTwo(intLoop).Pin()
-                        'Check for first time pin
-                        CheckingForFirstTimePin(True, "9|") 'Joiner lost
-                    End If
-                    'Draw zombies dying, pinning or walking
-                    If Not audcZombiesTwo(intLoop).IsDead Then
+                End If
+            Next
+
+            'Draw character joiner
+            gGraphics.DrawImageUnscaled(udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
+
+            'Second horde of zombies for joiner
+            For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+                If audcZombiesTwo(intLoop) IsNot Nothing Then
+                    If audcZombiesTwo(intLoop).Spawned Then
+                        'Check distance
+                        If audcZombiesTwo(intLoop).ZombiePoint.X <= 300 And Not audcZombiesTwo(intLoop).IsPinning Then
+                            'Set
+                            audcZombiesTwo(intLoop).Pin()
+                            If blnHost Then
+                                'Check for first time pin
+                                CheckingForFirstTimePin(True, "9|") 'Joiner lost
+                            End If
+                        End If
+                        'Draw zombies dying, pinning or walking
                         gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).ZombieImage, audcZombiesTwo(intLoop).ZombiePoint)
                     End If
-                Next
-            Else 'What the joiner sees
-                'First horde of zombies for hoster
-                For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
-                    'Check distance
-                    If audcZombiesOne(intLoop).ZombiePoint.X <= 200 And Not audcZombiesOne(intLoop).IsPinning Then
-                        'Set
-                        audcZombiesOne(intLoop).Pin()
-                    End If
-                    'Draw zombies dying, pinning or walking
-                    If Not audcZombiesOne(intLoop).IsDead Then
-                        gGraphics.DrawImageUnscaled(audcZombiesOne(intLoop).ZombieImage, audcZombiesOne(intLoop).ZombiePoint)
-                    End If
-                Next
-                'Draw character joiner
-                gGraphics.DrawImageUnscaled(udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
-                'Second horde of zombies for joiner
-                For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
-                    'Check distance
-                    If audcZombiesTwo(intLoop).ZombiePoint.X <= 250 And Not audcZombiesTwo(intLoop).IsPinning Then
-                        'Set
-                        audcZombiesTwo(intLoop).Pin()
-                    End If
-                    'Draw zombies dying, pinning or walking
-                    If Not audcZombiesTwo(intLoop).IsDead Then
-                        gGraphics.DrawImageUnscaled(audcZombiesTwo(intLoop).ZombieImage, audcZombiesTwo(intLoop).ZombiePoint)
-                    End If
-                Next
-            End If
+                End If
+            Next
 
             'Draw nickname
             If blnHost Then
@@ -1980,9 +1932,6 @@ Public Class frmGame
         'Set
         pntGameBackground.X = 0
 
-        'Set
-        intCanvasMovementZombieDeathAdjustment = 0
-
         'Load game objects
         LoadGameObjects(10)
 
@@ -2071,17 +2020,136 @@ Public Class frmGame
         udcCharacter = New clsCharacter(Me, 100, 325, "udcCharacter")
 
         'Zombies
-        audcZombies(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed, "udcCharacter")
-        audcZombies(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeed, "udcCharacter")
-        audcZombies(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeed, "udcCharacter")
-        audcZombies(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeed, "udcCharacter")
-        audcZombies(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeed, "udcCharacter")
+        LoadZombies("Level 1 Single Player")
 
         'Set
         btmLoadingBar = btmLoadingBar100
 
         'Set
         intCanvasShow = 1 'Means completely loaded
+
+    End Sub
+
+    Private Sub LoadZombies(strGameType As String)
+
+        'Check if multiplayer or not
+        Select Case strGameType
+            Case "Level 1 Single Player"
+                'Zombies
+                For intLoop As Integer = 0 To (NUMBEROFZOMBIESCREATED - 1)
+                    ReDim Preserve audcZombies(intLoop)
+                    Select Case intLoop
+                        Case 0
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed, "udcCharacter")
+                        Case 1
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeed, "udcCharacter")
+                        Case 2
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeed, "udcCharacter")
+                        Case 3
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeed, "udcCharacter")
+                        Case 4
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeed, "udcCharacter")
+                        Case 5 To 8, 10 To 13, 15 To 18, 20 To 23
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 5, "udcCharacter")
+                        Case 9, 14, 19, 24
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 25, "udcCharacter")
+                        Case 25 To 28, 30 To 33, 35 To 38, 40 To 43
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 10, "udcCharacter")
+                        Case 29, 34, 39, 44
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 30, "udcCharacter")
+                        Case 45 To 47, 50 To 52, 55 To 57, 60 To 62
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 15, "udcCharacter")
+                        Case 48, 49, 53, 54, 58, 59, 63, 64
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 35, "udcCharacter")
+                        Case 65 To 74
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 5, "udcCharacter")
+                        Case 75 To 84
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 10, "udcCharacter")
+                        Case 85 To 94
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 15, "udcCharacter")
+                        Case 95 To 104
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 20, "udcCharacter")
+                        Case Else
+                            audcZombies(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeed + 45, "udcCharacter")
+                    End Select
+                Next
+            Case "Level 1 Multiplayer"
+                'Zombies
+                For intLoop As Integer = 0 To (NUMBEROFZOMBIESCREATED - 1)
+                    ReDim Preserve audcZombiesOne(intLoop)
+                    Select Case intLoop
+                        Case 0
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne, "udcCharacterOne")
+                        Case 1
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 325, intZombieSpeedOne, "udcCharacterOne")
+                        Case 2
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 325, intZombieSpeedOne, "udcCharacterOne")
+                        Case 3
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 325, intZombieSpeedOne, "udcCharacterOne")
+                        Case 4
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 325, intZombieSpeedOne, "udcCharacterOne")
+                        Case 5 To 8, 10 To 13, 15 To 18, 20 To 23
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 5, "udcCharacterOne")
+                        Case 9, 14, 19, 24
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 25, "udcCharacterOne")
+                        Case 25 To 28, 30 To 33, 35 To 38, 40 To 43
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 10, "udcCharacterOne")
+                        Case 29, 34, 39, 44
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 30, "udcCharacterOne")
+                        Case 45 To 47, 50 To 52, 55 To 57, 60 To 62
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 15, "udcCharacterOne")
+                        Case 48, 49, 53, 54, 58, 59, 63, 64
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 35, "udcCharacterOne")
+                        Case 65 To 74
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 5, "udcCharacterOne")
+                        Case 75 To 84
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 10, "udcCharacterOne")
+                        Case 85 To 94
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 15, "udcCharacterOne")
+                        Case 95 To 104
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 20, "udcCharacterOne")
+                        Case Else
+                            audcZombiesOne(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH, 325, intZombieSpeedOne + 45, "udcCharacterOne")
+                    End Select
+                Next
+                For intLoop As Integer = 0 To (NUMBEROFZOMBIESCREATED - 1)
+                    ReDim Preserve audcZombiesTwo(intLoop)
+                    Select Case intLoop
+                        Case 0
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+                        Case 1
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+                        Case 2
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+                        Case 3
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+                        Case 4
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+                        Case 5 To 8, 10 To 13, 15 To 18, 20 To 23
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 5, "udcCharacterTwo")
+                        Case 9, 14, 19, 24
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 25, "udcCharacterTwo")
+                        Case 25 To 28, 30 To 33, 35 To 38, 40 To 43
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 10, "udcCharacterTwo")
+                        Case 29, 34, 39, 44
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 30, "udcCharacterTwo")
+                        Case 45 To 47, 50 To 52, 55 To 57, 60 To 62
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 15, "udcCharacterTwo")
+                        Case 48, 49, 53, 54, 58, 59, 63, 64
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 35, "udcCharacterTwo")
+                        Case 65 To 74
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 5, "udcCharacterTwo")
+                        Case 75 To 84
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 10, "udcCharacterTwo")
+                        Case 85 To 94
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 15, "udcCharacterTwo")
+                        Case 95 To 104
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 20, "udcCharacterTwo")
+                        Case Else
+                            audcZombiesTwo(intLoop) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo + 45, "udcCharacterTwo")
+                    End Select
+                Next
+        End Select
 
     End Sub
 
@@ -2166,6 +2234,9 @@ Public Class frmGame
     End Sub
 
     Private Sub AddWordsToArray()
+
+        AddWordToArray("a")
+        Exit Sub
 
         'Words
         AddWordToArray("and")
@@ -2471,7 +2542,7 @@ Public Class frmGame
                     'Start character
                     udcCharacter.Start()
                     'Start zombies
-                    For intLoop As Integer = 0 To audcZombies.GetUpperBound(0)
+                    For intLoop As Integer = 0 To (NUMBEROFZOMBIESATONETIME - 1)
                         audcZombies(intLoop).Start()
                     Next
                     'Start stop watch
@@ -2729,10 +2800,10 @@ Public Class frmGame
         udcCharacterTwo.Start()
 
         'Start zombies
-        For intLoop As Integer = 0 To audcZombiesOne.GetUpperBound(0)
+        For intLoop As Integer = 0 To (NUMBEROFZOMBIESATONETIME - 1)
             audcZombiesOne(intLoop).Start()
         Next
-        For intLoop As Integer = 0 To audcZombiesTwo.GetUpperBound(0)
+        For intLoop As Integer = 0 To (NUMBEROFZOMBIESATONETIME - 1)
             audcZombiesTwo(intLoop).Start()
         Next
 
@@ -3075,24 +3146,12 @@ Public Class frmGame
                 If Not blnIgnoreKillingZombie Then
                     'Declare
                     Dim intIndex As Integer = intGetIndexOfClosestZombie(audcZombiesType)
-                    'Wait until a zombie can be killed
-                    While True
-                        If intIndex <> audcZombiesType.GetUpperBound(0) + 1 Then
-                            'Die
-                            audcZombiesType(intIndex).Dying()
-                            'Send data
-                            If blnSendData Then
-                                gSendData("3|" & intIndex) 'send zombie kill
-                            End If
-                            'Exit
-                            Exit While
-                        Else
-                            'Sleep
-                            System.Threading.Thread.Sleep(5)
-                            'Re-check index
-                            intIndex = intGetIndexOfClosestZombie(audcZombiesType)
-                        End If
-                    End While
+                    'Die
+                    audcZombiesType(intIndex).Dying()
+                    'Send data
+                    If blnSendData Then
+                        gSendData("3|" & intIndex) 'Send zombie kill
+                    End If
                     'Character shoots
                     udcCharacterType.Shot()
                 Else
@@ -3138,14 +3197,16 @@ Public Class frmGame
 
         'Declare
         Dim intClosestX As Integer = Integer.MaxValue
-        Dim intIndex As Integer = audcZombie.GetUpperBound(0) + 1
+        Dim intIndex As Integer = 0
 
         'Loop to get closest zombie
         For intLoop As Integer = 0 To audcZombie.GetUpperBound(0)
-            If Not audcZombie(intLoop).IsDying And Not audcZombie(intLoop).IsDead Then
-                If intClosestX > audcZombie(intLoop).ZombiePoint.X Then
-                    intClosestX = audcZombie(intLoop).ZombiePoint.X
-                    intIndex = intLoop
+            If audcZombie(intLoop) IsNot Nothing Then
+                If Not audcZombie(intLoop).IsDying And Not audcZombie(intLoop).IsDead Then
+                    If intClosestX > audcZombie(intLoop).ZombiePoint.X Then
+                        intClosestX = audcZombie(intLoop).ZombiePoint.X
+                        intIndex = intLoop
+                    End If
                 End If
             End If
         Next
@@ -3287,9 +3348,6 @@ Public Class frmGame
         'Set
         pntGameBackground.X = 0
 
-        'Set
-        intCanvasMovementZombieDeathAdjustment = 0
-
         'Load game objects
         LoadGameObjects(10)
 
@@ -3392,19 +3450,8 @@ Public Class frmGame
             udcCharacterTwo = New clsCharacter(Me, 200, 350, "udcCharacterTwo", False) 'Join
         End If
 
-        'Zombies for host
-        audcZombiesOne(0) = New clsZombie(Me, ORIGINALSCREENWIDTH, 300, intZombieSpeedOne, "udcCharacterOne")
-        audcZombiesOne(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500, 300, intZombieSpeedOne, "udcCharacterOne")
-        audcZombiesOne(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000, 300, intZombieSpeedOne, "udcCharacterOne")
-        audcZombiesOne(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500, 300, intZombieSpeedOne, "udcCharacterOne")
-        audcZombiesOne(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000, 300, intZombieSpeedOne, "udcCharacterOne")
-
-        'Zombies for joiner
-        audcZombiesTwo(0) = New clsZombie(Me, ORIGINALSCREENWIDTH + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
-        audcZombiesTwo(1) = New clsZombie(Me, ORIGINALSCREENWIDTH + 500 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
-        audcZombiesTwo(2) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1000 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
-        audcZombiesTwo(3) = New clsZombie(Me, ORIGINALSCREENWIDTH + 1500 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
-        audcZombiesTwo(4) = New clsZombie(Me, ORIGINALSCREENWIDTH + 2000 + 100, 350, intZombieSpeedTwo, "udcCharacterTwo")
+        'Zombies
+        LoadZombies("Level 1 Multiplayer")
 
         'Set if hosting
         If blnHost And Not blnReadyEarly Then
@@ -3502,22 +3549,10 @@ Public Class frmGame
                 Case "3" 'Show join has shot
                     'Declare
                     Dim intIndex As Integer = intGetIndexOfClosestZombie(audcZombiesTwo)
-                    'Wait until a zombie can be killed
-                    While True
-                        If intIndex <> audcZombiesTwo.GetUpperBound(0) + 1 Then
-                            'Send data
-                            gSendData("4|" & intIndex)
-                            'Die
-                            audcZombiesTwo(intIndex).Dying()
-                            'Exit
-                            Exit While
-                        Else
-                            'Sleep
-                            System.Threading.Thread.Sleep(5)
-                            'Re-check index
-                            intIndex = intGetIndexOfClosestZombie(audcZombiesTwo)
-                        End If
-                    End While
+                    'Send data
+                    gSendData("4|" & intIndex)
+                    'Die
+                    audcZombiesTwo(intIndex).Dying()
                     'Character shot
                     udcCharacterTwo.Shot()
                 Case "5" 'Show join reloading
@@ -3613,8 +3648,20 @@ Public Class frmGame
         Select Case e.KeyCode
             Case Keys.Right
                 If Not blnGameIsVersus Then
-                    If Not udcCharacter.IsRunning Then
+                    If Not udcCharacter.IsRunning And Not udcCharacter.IsReloading And Not udcCharacter.IsShooting Then
+                        'Run
                         udcCharacter.Running()
+                        Exit Sub
+                    End If
+                    If Not udcCharacter.IsRunning And udcCharacter.IsReloading Then
+                        'Set
+                        udcCharacter.PrepareToRun = True
+                        Exit Sub
+                    End If
+                    If Not udcCharacter.IsRunning And udcCharacter.IsShooting Then
+                        'Set
+                        udcCharacter.PrepareToRun = True
+                        Exit Sub
                     End If
                 End If
         End Select

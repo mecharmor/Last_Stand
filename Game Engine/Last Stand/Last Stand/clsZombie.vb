@@ -14,6 +14,10 @@ Public Class clsZombie
     Private _intSpeed As Integer = 25
     Private intFrameDeath As Integer = 0
     Private _strThisObjectNameCorrespondingToCharacter As String = ""
+    Private _blnSpawn As Boolean = False
+
+    'For error preventing
+    Private blnAborted As Boolean = False
 
     'Bitmaps
     Private btmZombie As Bitmap
@@ -36,7 +40,7 @@ Public Class clsZombie
     Private _blnCanBecomeDead As Boolean = True
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
-                   Optional blnStartAnimation As Boolean = False)
+                   Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
@@ -44,7 +48,13 @@ Public Class clsZombie
         'Set
         _strThisObjectNameCorrespondingToCharacter = strThisObjectNameCorrespondingToCharacter
 
-        'Preset
+        'Set
+        _intSpeed = intSpeed
+
+        'Set
+        _blnSpawn = blnSpawn
+
+        'Set animation
         Select Case _strThisObjectNameCorrespondingToCharacter
             Case "udcCharacter"
                 btmZombie = gbtmZombieWalk(0)
@@ -53,9 +63,6 @@ Public Class clsZombie
             Case "udcCharacterTwo"
                 btmZombie = gbtmZombieWalkBlue(0)
         End Select
-
-        'Set
-        _intSpeed = intSpeed
 
         'Set
         intSpotX = intSpawnX
@@ -69,7 +76,10 @@ Public Class clsZombie
 
     End Sub
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = 175)
+    Public Sub Start(Optional intAnimatingDelay As Integer = 175, Optional blnSpawn As Boolean = True)
+
+        'Set
+        _blnSpawn = blnSpawn
 
         'Set
         _intAnimatingDelay = intAnimatingDelay
@@ -100,6 +110,15 @@ Public Class clsZombie
         Return blnPassed
 
     End Function
+
+    Public ReadOnly Property Spawned() As Boolean
+
+        'Return
+        Get
+            Return _blnSpawn
+        End Get
+
+    End Property
 
     Public ReadOnly Property ZombieImage() As Bitmap
 
@@ -411,34 +430,50 @@ Public Class clsZombie
 
     Public Sub Dying(Optional blnCanBecomeDead As Boolean = True)
 
+        'Notes: Dying is more necessary than pinning, therefore this is why the subs do not look exactly the same with order of operations.
+
         'Check for no instance
         If thrAnimating IsNot Nothing Then
             'Set
             _blnCanBecomeDead = blnCanBecomeDead
             'Abort thread
-            thrAnimating.Abort()
-            'Set
-            blnIsDying = True
-            'Set
-            blnFirstTimeDyingPass = True
-            'Restart thread
-            Start(110)
+            If thrAnimating.IsAlive Then
+                'Prevent error first
+                If Not blnAborted Then
+                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                    blnAborted = True
+                End If
+                'Set
+                blnIsDying = True
+                'Set
+                blnFirstTimeDyingPass = True
+                'Restart thread
+                Start(110)
+            End If
         End If
 
     End Sub
 
     Public Sub Pin()
 
+        'Notes: Dying is more necessary than pinning, therefore this is why the subs do not look exactly the same with order of operations.
+
         'Check for no instance
         If thrAnimating IsNot Nothing Then
             'Abort thread
-            thrAnimating.Abort()
-            'Set pinning
-            blnIsPinning = True
-            'Set
-            blnFirstTimePinningPass = True
-            'Restart thread
-            Start(200)
+            If thrAnimating.IsAlive Then
+                'Prevent error first
+                If Not blnAborted Then
+                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                    blnAborted = True
+                    'Set pinning
+                    blnIsPinning = True
+                    'Set
+                    blnFirstTimePinningPass = True
+                    'Restart thread
+                    Start(200)
+                End If
+            End If
         End If
 
     End Sub
