@@ -35,6 +35,7 @@ Public Class clsCharacter
     Private blnIsRunning As Boolean = False
     Private blnFirstTimeRunningPass As Boolean = False
     Private blnPrepareToRun As Boolean = False
+    Private blnEndOfLevel As Boolean = False
 
     'Reload sound
     Private udcReloadingSound As clsSound
@@ -191,17 +192,23 @@ Public Class clsCharacter
 
             'Check for first time pass running
             If blnFirstTimeRunningPass Then
-                'Set
-                blnFirstTimeRunningPass = False
-                'Change frame immediately
-                intFrame = 26
-                'Move point
-                pntCharacter.X = -40
-                'Show
-                Select Case _strThisObjectName
-                    Case "udcCharacter"
-                        btmCharacter = gbtmCharacterRunning(0)
-                End Select
+                'Check incase level is completed
+                If blnEndOfLevel Then
+                    'Stop running
+                    IsRunning = False
+                Else
+                    'Set
+                    blnFirstTimeRunningPass = False
+                    'Change frame immediately
+                    intFrame = 26
+                    'Move point
+                    pntCharacter.X = -40
+                    'Show
+                    Select Case _strThisObjectName
+                        Case "udcCharacter"
+                            btmCharacter = gbtmCharacterRunning(0)
+                    End Select
+                End If
             End If
 
             'Sleep
@@ -294,21 +301,8 @@ Public Class clsCharacter
                             'Increase
                             intReloadTimes += 1
                         Else
-                            'Change sleep
-                            _intAnimatingDelay = 3000
-                            'Set
-                            blnIsShooting = False
-                            blnIsReloading = False
-                            'Set frame
-                            intFrame = 1
-                            Select Case _strThisObjectName
-                                Case "udcCharacter"
-                                    btmCharacter = gbtmCharacterStand(0)
-                                Case "udcCharacterOne"
-                                    btmCharacter = gbtmCharacterStandRed(0)
-                                Case "udcCharacterTwo"
-                                    btmCharacter = gbtmCharacterStandBlue(0)
-                            End Select
+                            'Standing
+                            StandingFrame()
                         End If
                     End If
 
@@ -339,27 +333,57 @@ Public Class clsCharacter
                     _intBullets = 0
 
                 Case 26 To 41
-                    'Set frame
-                    intFrame += 1
-                    'Move point
-                    pntCharacter.X = -40
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterRunning(intFrame - 26) '27 - 26 = 1 in the array
-                    End Select
-                    'Play reloading sound
-                    Select Case intFrame
-                        Case 32, 39, 41
-                            Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
-                    End Select
-                    'Check if stop running
-                    If intFrame = 42 Then
-                        intFrame = 4
+                    'Check if end of level
+                    If blnEndOfLevel Then
+                        'Stop running
+                        IsRunning = False
+                    Else
+                        'Set frame
+                        intFrame += 1
+                        'Move point
+                        pntCharacter.X = -40
+                        Select Case _strThisObjectName
+                            Case "udcCharacter"
+                                btmCharacter = gbtmCharacterRunning(intFrame - 26) '27 - 26 = 1 in the array
+                        End Select
+                        'Play reloading sound
+                        Select Case intFrame
+                            Case 32, 39, 41
+                                Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1250, gintSoundVolume)
+                        End Select
+                        'Check if stop running
+                        If intFrame = 42 Then
+                            intFrame = 4
+                        End If
                     End If
 
             End Select
 
         End While
+
+    End Sub
+
+    Private Sub StandingFrame()
+
+        'Change sleep
+        _intAnimatingDelay = 3000
+
+        'Set
+        blnIsShooting = False
+        blnIsReloading = False
+
+        'Set frame
+        intFrame = 1
+
+        'Set
+        Select Case _strThisObjectName
+            Case "udcCharacter"
+                btmCharacter = gbtmCharacterStand(0)
+            Case "udcCharacterOne"
+                btmCharacter = gbtmCharacterStandRed(0)
+            Case "udcCharacterTwo"
+                btmCharacter = gbtmCharacterStandBlue(0)
+        End Select
 
     End Sub
 
@@ -470,12 +494,49 @@ Public Class clsCharacter
 
     End Property
 
-    Public ReadOnly Property IsRunning() As Boolean
+    Public Property IsRunning() As Boolean
 
         'Return
         Get
             Return blnIsRunning
         End Get
+
+        'Set
+        Set(value As Boolean)
+
+            'Set
+            blnIsRunning = value
+
+            'Check
+            If Not value Then
+                'Check for instance
+                If thrAnimating IsNot Nothing Then
+                    'Abort thread
+                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                    'Set
+                    pntCharacter.X = intSpotX
+                    'Stand
+                    StandingFrame()
+                    'Start
+                    Start()
+                End If
+            End If
+
+        End Set
+
+    End Property
+
+    Public Property EndOfLevel() As Boolean
+
+        'Return
+        Get
+            Return blnEndOfLevel
+        End Get
+
+        'Set
+        Set(value As Boolean)
+            blnEndOfLevel = value
+        End Set
 
     End Property
 
