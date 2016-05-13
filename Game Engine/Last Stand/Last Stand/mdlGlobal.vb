@@ -39,6 +39,9 @@ Module mdlGlobal
     Public gbtmZombieDeath2Blue(5) As Bitmap
     Public gbtmZombiePinBlue(1) As Bitmap
 
+    'Helicopter
+    Public gbtmHelicopter(4) As Bitmap
+
     'Multiplayer versus
     Public gswClientData As IO.StreamWriter
 

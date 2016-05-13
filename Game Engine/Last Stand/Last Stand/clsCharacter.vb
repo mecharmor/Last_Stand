@@ -14,6 +14,10 @@ Public Class clsCharacter
     Private _intBullets As Integer = 0 'Gun bullets
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
 
+    'For error preventing
+    Private blnAborted As Boolean = False
+    Private blnKeepUsingAnimatingThread As Boolean = True
+
     'Bitmaps
     Private btmCharacter As Bitmap
     Private pntCharacter As Point
@@ -136,6 +140,13 @@ Public Class clsCharacter
         If thrAnimating IsNot Nothing Then
             If thrAnimating.IsAlive Then
                 thrAnimating.Abort()
+                blnAborted = True
+
+                'While thrAnimating.IsAlive
+                '    System.Threading.Thread.Sleep(1)
+                '    Debug.Print("CHARACTER STOPANDDISPOSE")
+                'End While
+
                 thrAnimating = Nothing
             End If
         End If
@@ -144,11 +155,16 @@ Public Class clsCharacter
 
     Private Sub Animating()
 
+        'Reset
+        blnAborted = False
+
         'Declare
         Dim intLoop As Integer = 0
 
         'Continue
-        While True
+        While blnKeepUsingAnimatingThread
+
+            'Debug.Print("CHARACTER")
 
             'Check for first time pass shooting
             If blnFirstTimeShootingPass Then
@@ -420,6 +436,13 @@ Public Class clsCharacter
             End If
             'Abort thread
             thrAnimating.Abort()
+            blnAborted = True
+
+            'While thrAnimating.IsAlive
+            '    System.Threading.Thread.Sleep(1)
+            '    Debug.Print("CHARACTER SHOT")
+            'End While
+
             'Set
             blnIsShooting = True
             'Set
@@ -445,6 +468,13 @@ Public Class clsCharacter
                 SendData()
                 'Abort thread
                 thrAnimating.Abort()
+                blnAborted = True
+
+                'While thrAnimating.IsAlive
+                '    System.Threading.Thread.Sleep(1)
+                '    Debug.Print("CHARACTER RELOAD")
+                'End While
+
                 'Set
                 blnIsReloading = True
                 'Set
@@ -511,8 +541,19 @@ Public Class clsCharacter
             If Not value Then
                 'Check for instance
                 If thrAnimating IsNot Nothing Then
-                    'Abort thread
-                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                    'Abort
+                    While thrAnimating.IsAlive
+                        If Not blnAborted Then
+                            thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                            blnAborted = True
+                        End If
+                    End While
+
+                    'While thrAnimating.IsAlive
+                    '    System.Threading.Thread.Sleep(1)
+                    '    Debug.Print("CHARACTER ISRUNNING")
+                    'End While
+
                     'Set
                     pntCharacter.X = intSpotX
                     'Stand
@@ -535,7 +576,15 @@ Public Class clsCharacter
 
         'Set
         Set(value As Boolean)
+
+            'Set
             blnEndOfLevel = value
+
+            'Check if ending level
+            If value Then
+                blnKeepUsingAnimatingThread = False
+            End If
+
         End Set
 
     End Property
@@ -571,8 +620,19 @@ Public Class clsCharacter
 
         'Check for instance
         If thrAnimating IsNot Nothing Then
-            'Abort thread
-            thrAnimating.Abort()
+            'Abort
+            While thrAnimating.IsAlive
+                If Not blnAborted Then
+                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
+                    blnAborted = True
+                End If
+            End While
+
+            'While thrAnimating.IsAlive
+            '    System.Threading.Thread.Sleep(1)
+            '    Debug.Print("CHARACTER RUNNING")
+            'End While
+
             'Set
             blnIsRunning = True
             'Set

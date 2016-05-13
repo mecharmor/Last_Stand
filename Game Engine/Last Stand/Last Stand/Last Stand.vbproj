@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="clsCharacter.vb" />
+    <Compile Include="clsHelicopter.vb" />
     <Compile Include="clsSound.vb" />
     <Compile Include="clsVersusConnectedThread.vb" />
     <Compile Include="clsZombie.vb" />
@@ -80,6 +81,11 @@
     <Compile Include="frmGame.Designer.vb">
       <DependentUpon>frmGame.vb</DependentUpon>
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="HighscoresDataSet.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>HighscoresDataSet.xsd</DependentUpon>
     </Compile>
     <Compile Include="mdlGlobal.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
@@ -110,6 +116,17 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="HighscoresDataSet.xsc">
+      <DependentUpon>HighscoresDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="HighscoresDataSet.xsd">
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>HighscoresDataSet.Designer.vb</LastGenOutput>
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="HighscoresDataSet.xss">
+      <DependentUpon>HighscoresDataSet.xsd</DependentUpon>
+    </None>
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>
@@ -120,6 +137,11 @@
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Highscores.accdb">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

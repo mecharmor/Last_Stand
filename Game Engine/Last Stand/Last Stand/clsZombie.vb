@@ -14,10 +14,7 @@ Public Class clsZombie
     Private _intSpeed As Integer = 25
     Private intFrameDeath As Integer = 0
     Private _strThisObjectNameCorrespondingToCharacter As String = ""
-    Private _blnSpawn As Boolean = False
-
-    'For error preventing
-    Private blnAborted As Boolean = False
+    Private _blnSpawned As Boolean = False
 
     'Bitmaps
     Private btmZombie As Bitmap
@@ -28,6 +25,8 @@ Public Class clsZombie
     Private _intAnimatingDelay As Integer = 0
 
     'Dying
+    Private blnMarkedToDie As Boolean = False
+    Private blnHasPassedMarkToDie As Boolean = False
     Private blnIsDying As Boolean = False
     Private blnFirstTimeDyingPass As Boolean = False
 
@@ -37,7 +36,6 @@ Public Class clsZombie
 
     'Dead for painting on background
     Private blnDead As Boolean = False
-    Private _blnCanBecomeDead As Boolean = True
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
                    Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
@@ -52,7 +50,7 @@ Public Class clsZombie
         _intSpeed = intSpeed
 
         'Set
-        _blnSpawn = blnSpawn
+        _blnSpawned = blnSpawn
 
         'Set animation
         Select Case _strThisObjectNameCorrespondingToCharacter
@@ -79,7 +77,7 @@ Public Class clsZombie
     Public Sub Start(Optional intAnimatingDelay As Integer = 175, Optional blnSpawn As Boolean = True)
 
         'Set
-        _blnSpawn = blnSpawn
+        _blnSpawned = blnSpawn
 
         'Set
         _intAnimatingDelay = intAnimatingDelay
@@ -111,12 +109,17 @@ Public Class clsZombie
 
     End Function
 
-    Public ReadOnly Property Spawned() As Boolean
+    Public Property Spawned() As Boolean
 
         'Return
         Get
-            Return _blnSpawn
+            Return _blnSpawned
         End Get
+
+        'Set
+        Set(value As Boolean)
+            _blnSpawned = value
+        End Set
 
     End Property
 
@@ -158,7 +161,7 @@ Public Class clsZombie
     Private Sub Animating()
 
         'Continue
-        While True
+        While Not blnDead
 
             'Check for first time pass dying
             If blnFirstTimeDyingPass Then
@@ -380,39 +383,23 @@ Public Class clsZombie
             Case 5
                 btmZombie = btmZombieDeath(5)
                 'Paint on top of the background
-                If _blnCanBecomeDead Then
-                    blnDead = True 'Only ignored if in multiplayer versus for joiner
-                End If
+                blnDead = True
         End Select
 
     End Sub
 
-    Public Property IsDead() As Boolean
+    Public ReadOnly Property IsDead() As Boolean
 
-        'Notes: Can only set to dead once and cannot set to undead.
-
-        'Return if ready to paint after death
+        'Return
         Get
             Return blnDead
         End Get
-
-        'Set
-        Set(value As Boolean)
-            If value <> False Then
-                'Set first
-                If blnIsDying <> True Then
-                    blnIsDying = True
-                End If
-                'Set
-                blnDead = value 'Used only in multiplayer versus for joiner
-            End If
-        End Set
 
     End Property
 
     Public ReadOnly Property IsPinning() As Boolean
 
-        'Return pinning or not
+        'Return
         Get
             Return blnIsPinning
         End Get
@@ -428,21 +415,46 @@ Public Class clsZombie
 
     End Property
 
-    Public Sub Dying(Optional blnCanBecomeDead As Boolean = True)
+    Public Property MarkedToDie() As Boolean
+
+        'Notes: This zombie will only die after being rendered through the render thread.
+
+        'Return
+        Get
+            Return blnMarkedToDie
+        End Get
+
+        'Set
+        Set(value As Boolean)
+            blnMarkedToDie = value
+        End Set
+
+    End Property
+
+    Public Property HasPassedMarkToDie() As Boolean
+
+        'Return
+        Get
+            Return blnHasPassedMarkToDie
+        End Get
+
+        'Set
+        Set(value As Boolean)
+            blnHasPassedMarkToDie = value
+        End Set
+
+    End Property
+
+    Public Sub Dying()
 
         'Notes: Dying is more necessary than pinning, therefore this is why the subs do not look exactly the same with order of operations.
 
         'Check for no instance
         If thrAnimating IsNot Nothing Then
-            'Set
-            _blnCanBecomeDead = blnCanBecomeDead
             'Abort thread
             If thrAnimating.IsAlive Then
-                'Prevent error first
-                If Not blnAborted Then
-                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
-                    blnAborted = True
-                End If
+                'Abort
+                thrAnimating.Abort()
                 'Set
                 blnIsDying = True
                 'Set
@@ -462,17 +474,14 @@ Public Class clsZombie
         If thrAnimating IsNot Nothing Then
             'Abort thread
             If thrAnimating.IsAlive Then
-                'Prevent error first
-                If Not blnAborted Then
-                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
-                    blnAborted = True
-                    'Set pinning
-                    blnIsPinning = True
-                    'Set
-                    blnFirstTimePinningPass = True
-                    'Restart thread
-                    Start(200)
-                End If
+                'Abort
+                thrAnimating.Abort()
+                'Set pinning
+                blnIsPinning = True
+                'Set
+                blnFirstTimePinningPass = True
+                'Restart thread
+                Start(200)
             End If
         End If
 
