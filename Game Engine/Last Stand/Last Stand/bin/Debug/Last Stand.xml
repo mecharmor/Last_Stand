@@ -6,7 +6,20 @@ LastStand
 </name>
 </assembly>
 <members>
-<member name="T:Last_Stand.HighscoresDataSet.HighscoresTableDataTable">
+<member name="P:Last_Stand.My.Resources.Resources.ResourceManager">
+	<summary>
+  Returns the cached ResourceManager instance used by this class.
+</summary>
+</member><member name="P:Last_Stand.My.Resources.Resources.Culture">
+	<summary>
+  Overrides the current thread's CurrentUICulture property for all
+  resource lookups using this strongly typed resource class.
+</summary>
+</member><member name="T:Last_Stand.My.Resources.Resources">
+	<summary>
+  A strongly-typed resource class, for looking up localized strings, etc.
+</summary>
+</member><member name="T:Last_Stand.HighscoresDataSet.HighscoresTableDataTable">
 	<summary>
 Represents the strongly named DataTable class.
 </summary>
@@ -57,19 +70,6 @@ Used to sort self-referenced table's rows
 </member><member name="T:Last_Stand.HighscoresDataSetTableAdapters.TableAdapterManager">
 	<summary>
 TableAdapterManager is used to coordinate TableAdapters in the dataset to enable Hierarchical Update scenarios
-</summary>
-</member><member name="P:Last_Stand.My.Resources.Resources.ResourceManager">
-	<summary>
-  Returns the cached ResourceManager instance used by this class.
-</summary>
-</member><member name="P:Last_Stand.My.Resources.Resources.Culture">
-	<summary>
-  Overrides the current thread's CurrentUICulture property for all
-  resource lookups using this strongly typed resource class.
-</summary>
-</member><member name="T:Last_Stand.My.Resources.Resources">
-	<summary>
-  A strongly-typed resource class, for looking up localized strings, etc.
 </summary>
 </member>
 </members>

@@ -1262,7 +1262,7 @@ Public Class frmGame
     Private Function CheckStringForInvalidCharacters(strToCheck As String) As Boolean
 
         'Declare
-        Dim astrInvalidCharacters(20) As String
+        Dim astrInvalidCharacters(28) As String
 
         'Announce
         astrInvalidCharacters(0) = "'"
