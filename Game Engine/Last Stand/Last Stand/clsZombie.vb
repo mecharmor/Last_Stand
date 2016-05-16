@@ -82,32 +82,11 @@ Public Class clsZombie
         'Set
         _intAnimatingDelay = intAnimatingDelay
 
-        'Start thread, timed to repeat incase of too much aborting
-        While Not blnStart()
-        End While
+        'Start thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
 
     End Sub
-
-    Private Function blnStart() As Boolean
-
-        'Declare
-        Dim blnPassed As Boolean = False
-
-        'Start thread
-        Try
-            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-            thrAnimating.Start()
-            'Set
-            blnPassed = True
-        Catch ex As Exception
-            'No debug, if got here, typed way too fast
-            blnPassed = False
-        End Try
-
-        'Return
-        Return blnPassed
-
-    End Function
 
     Public Property Spawned() As Boolean
 

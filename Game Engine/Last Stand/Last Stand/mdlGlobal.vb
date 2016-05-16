@@ -39,6 +39,9 @@ Module mdlGlobal
     Public gbtmZombieDeath2Blue(5) As Bitmap
     Public gbtmZombiePinBlue(1) As Bitmap
 
+    'Zombies that produce game lose
+    Public gbtmUnderwaterZombieGameLose As Bitmap
+
     'Helicopter
     Public gbtmHelicopter(4) As Bitmap
 

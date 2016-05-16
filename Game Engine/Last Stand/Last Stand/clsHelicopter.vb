@@ -46,35 +46,14 @@ Public Class clsHelicopter
         'Set
         _intAnimatingDelay = intAnimatingDelay
 
-        'Start thread, timed to repeat incase of too much aborting
-        While Not blnStart()
-        End While
+        'Start thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
 
         'Start rotating blade sound
         udcRotatingBladeSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\RotatingBlade.mp3", 98000, gintSoundVolume)
 
     End Sub
-
-    Private Function blnStart() As Boolean
-
-        'Declare
-        Dim blnPassed As Boolean = False
-
-        'Start thread
-        Try
-            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-            thrAnimating.Start()
-            'Set
-            blnPassed = True
-        Catch ex As Exception
-            'No debug, if got here, typed way too fast
-            blnPassed = False
-        End Try
-
-        'Return
-        Return blnPassed
-
-    End Function
 
     Public Sub StopAndDispose()
 

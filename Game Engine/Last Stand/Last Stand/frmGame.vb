@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAMEVERSION As String = "1.12"
+    Private Const GAMEVERSION As String = "1.13"
     Private Const ORIGINALSCREENWIDTH As Integer = 1680
     Private Const ORIGINALSCREENHEIGHT As Integer = 1050
     Private Const WINDOWMESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -60,6 +60,7 @@ Public Class frmGame
     Private btmLastStandText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\LastStand.png"))
     Private pntLastStandText As New Point(147, 833)
     Private udcAmbianceSound As clsSound
+    Private udcAmbianceOptionsSound As clsSound
 
     'Menu buttons
     Private btmStartText As New Bitmap(Image.FromFile(strDirectory & "Images\Menu\Start.png"))
@@ -179,6 +180,7 @@ Public Class frmGame
     Private btmDeathOverlay1 As Bitmap
     Private btmDeathOverlay2 As Bitmap
     Private btmDeathOverlay3 As Bitmap
+    Private btmWinOverlay As Bitmap
     Private udcScreamSound As clsSound
     Private intZombieKills As Integer = 0
     Private thrLevelCompleted As System.Threading.Thread
@@ -186,6 +188,10 @@ Public Class frmGame
     Private intLevel As Integer = 1 'Starting
     Private intReloadTimeUsed As Integer = 0
     Private blnComparedHighscore As Boolean = False
+
+    'Zombies that produce game lose
+    Private udcUnderwaterZombieGameLose As clsZombieGameLose
+    Private blnZombieGameLoseHappened As Boolean = False
 
     'Helicopter
     Private udcHelicopter As clsHelicopter
@@ -195,6 +201,8 @@ Public Class frmGame
     Private btmPathSewer0 As New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\Paths\Sewer0.jpg"))
     Private btmPathSewer1 As New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\Paths\Sewer1.jpg"))
     Private btmPathSewer2 As New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\Paths\Sewer2.jpg"))
+    Private blnLightZap1 As Boolean = False
+    Private blnLightZap2 As Boolean = False
 
     'Stop watch
     Private swhStopWatch As Stopwatch
@@ -210,6 +218,7 @@ Public Class frmGame
     'Highscores screen
     Private btmHighscoresBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Highscores\HighscoresBackground.jpg"))
     Private strHighscores As String = ""
+    Private blnHighscoresIsAccess As Boolean = False
 
     'Credits screen
     Private btmCreditsBackground As New Bitmap(Image.FromFile(strDirectory & "Images\Credits\CreditsBackground.jpg"))
@@ -448,6 +457,12 @@ Public Class frmGame
             udcAmbianceSound = Nothing
         End If
 
+        'Stop ambient options music
+        If udcAmbianceOptionsSound IsNot Nothing Then
+            udcAmbianceOptionsSound.StopAndCloseSound()
+            udcAmbianceOptionsSound = Nothing
+        End If
+
     End Sub
 
     Private Sub AbortThread(thrToAbort As System.Threading.Thread)
@@ -590,6 +605,12 @@ Public Class frmGame
             Next
         End If
 
+        'Stop and dispose zombies that produce game lose
+        If udcUnderwaterZombieGameLose IsNot Nothing Then
+            udcUnderwaterZombieGameLose.StopAndDispose()
+            udcUnderwaterZombieGameLose = Nothing
+        End If
+
     End Sub
 
     Private Sub frmGame_Load(sender As Object, e As EventArgs) Handles MyBase.Load
@@ -605,7 +626,7 @@ Public Class frmGame
             Me.Show()
             Me.Focus()
             'Get highscores early because grabbing information from the database access files is slow
-            LoadHighscoresString()
+            LoadHighscoresStringAccess()
             'Set percentage multiplers for screen modes
             gdblScreenWidthRatio = CDbl((intScreenWidth - WIDTHSUBTRACTION) / ORIGINALSCREENWIDTH)
             gdblScreenHeightRatio = CDbl((intScreenHeight - HEIGHTSUBTRACTION) / ORIGINALSCREENHEIGHT)
@@ -907,27 +928,19 @@ Public Class frmGame
 
     Private Sub KillZombiesMarkedToDie(audcZombiesType() As clsZombie, udcCharacterType As clsCharacter)
 
-        'Declare
-        Dim blnNeedsToShoot As Boolean = False
-
         'Kill zombies that were marked
         For intLoop As Integer = 0 To audcZombiesType.GetUpperBound(0)
             If audcZombiesType(intLoop).MarkedToDie Then
                 If Not audcZombiesType(intLoop).HasPassedMarkToDie Then
                     'Set
                     audcZombiesType(intLoop).HasPassedMarkToDie = True
-                    'Set
-                    blnNeedsToShoot = True
                     'Set to die in frames
                     audcZombiesType(intLoop).Dying()
+                    'Character shoots
+                    udcCharacterType.Shot()
                 End If
             End If
         Next
-
-        'Character shoots
-        If blnNeedsToShoot Then
-            udcCharacterType.Shot()
-        End If
 
     End Sub
 
@@ -938,10 +951,19 @@ Public Class frmGame
 
             'Level completed or end game
             If blnLevelCompleted Then
-                'Set
-                btmPath = btmPathSewer0
-                'Set
-                ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(11, 0, False)
+                'Check if player escaped
+                If intLevel = 3 Then
+                    'Escaped overlay
+                    DrawEndGameScreen(intZombieKills, udcCharacter, 1)
+                Else
+                    'Set
+                    blnLightZap1 = False
+                    blnLightZap2 = False
+                    'Set
+                    btmPath = btmPathSewer0
+                    'Set
+                    ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(11, 0, False)
+                End If
             Else
                 'Set
                 If udcCharacter IsNot Nothing Then
@@ -989,11 +1011,35 @@ Public Class frmGame
                 End If
             Next
 
+            Debug.Print(CStr(intZombieKills))
+
             'Paint background and word
             PaintBackgroundAndWord()
 
             'Draw character
             gGraphics.DrawImageUnscaled(udcCharacter.CharacterImage, udcCharacter.CharacterPoint)
+
+            'Stop if killed by a zombie game lose
+            If udcUnderwaterZombieGameLose IsNot Nothing Then
+                If pntGameBackground.X <= -1000 Then
+                    'Check if triggered already
+                    If Not blnZombieGameLoseHappened Then
+                        'Set
+                        blnZombieGameLoseHappened = True
+                        'Set for character to stop running
+                        udcCharacter.EndOfLevel = True
+                        'Show animation
+                        udcUnderwaterZombieGameLose.Start()
+                        'Character scream
+                        CheckingForFirstTimePin(False)
+                    End If
+                    'Check if happened
+                    If blnZombieGameLoseHappened Then
+                        'Paint zombie
+                        gGraphics.DrawImageUnscaled(udcUnderwaterZombieGameLose.ZombieImage, udcUnderwaterZombieGameLose.ZombiePoint)
+                    End If
+                End If
+            End If
 
             'Stop running if
             If pntGameBackground.X <= -2850 Then
@@ -1005,11 +1051,15 @@ Public Class frmGame
                     'Set for character to stop running
                     udcCharacter.EndOfLevel = True
                     'Play door
-                    Dim udcOpeningMetalDoor As New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\OpeningMetalDoor.mp3", 3000, gintSoundVolume)
-                    'Start black screen
-                    thrLevelCompleted = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf LevelCompleted))
-                    thrLevelCompleted.Start()
+                    Select Case intLevel
+                        Case 1, 2
+                            'Play door
+                            Dim udcOpeningMetalDoor As New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\OpeningMetalDoor.mp3", 3000, gintSoundVolume)
+                    End Select
                 End If
+                'Start black screen
+                thrLevelCompleted = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf LevelCompleted))
+                thrLevelCompleted.Start()
             End If
 
             'Change point for zombie if running
@@ -1069,16 +1119,16 @@ Public Class frmGame
                 End If
             End If
 
-            End If
+        End If
 
-            'Back button
-            If intCanvasShow = 1 Then
-                'Draw back text as hovered
-                gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
-            Else
-                'Draw back text
-                gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
-            End If
+        'Back button
+        If intCanvasShow = 1 Then
+            'Draw back text as hovered
+            gGraphics.DrawImageUnscaled(btmBackHoverText, pntBackHoverText)
+        Else
+            'Draw back text
+            gGraphics.DrawImageUnscaled(btmBackText, pntBackText)
+        End If
 
     End Sub
 
@@ -1147,7 +1197,7 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub DrawEndGameScreen(intZombieKillsType As Integer, udcCharacterType As clsCharacter)
+    Private Sub DrawEndGameScreen(intZombieKillsType As Integer, udcCharacterType As clsCharacter, Optional intEscapeType As Integer = 0)
 
         'Paint on canvas
         PaintOnCanvas()
@@ -1159,7 +1209,13 @@ Public Class frmGame
             If intLevel = 2 Then
                 gGraphics.DrawImageUnscaled(btmDeathOverlay2, pntTopLeft)
             Else
-                gGraphics.DrawImageUnscaled(btmDeathOverlay3, pntTopLeft)
+                'Check if escaped and won the game
+                Select Case intEscapeType
+                    Case 0
+                        gGraphics.DrawImageUnscaled(btmDeathOverlay3, pntTopLeft)
+                    Case 1
+                        gGraphics.DrawImageUnscaled(btmWinOverlay, pntTopLeft)
+                End Select
             End If
         End If
 
@@ -1194,13 +1250,60 @@ Public Class frmGame
                 'Set
                 blnComparedHighscore = True
                 'Compare score with highscores
-                CompareHighscores(intWPM)
+                CompareHighscoresAccess(intWPM)
             End If
         End If
 
     End Sub
 
-    Private Sub CompareHighscores(intWPMToBe As Integer)
+    Private Sub CompareHighscoresTextFile(intWPMToBe As Integer)
+
+        'Notes: If there was an error, the database content from the text file will load after. 
+        '       This is a backup to not having the correct database path, an install and registered Microsoft Provider 12.0.
+
+        'Declare
+        Dim ioSR As IO.StreamReader
+        Dim strTemp As String = ""
+        Dim astrTempSplit() As String
+        Dim intRank As Integer = 0
+        Dim blnRankBeat As Boolean = False
+
+        'Set
+        ioSR = IO.File.OpenText(strDirectory & "Images\Highscores\Highscores.txt")
+
+        'Use loop to get zombie kills
+        While ioSR.Peek <> -1
+            'Check if line is empty
+            strTemp = ioSR.ReadLine
+            'Check
+            If strTemp = "" Then
+                'Exit
+                Exit While
+            End If
+            'Get zombie kills
+            astrTempSplit = strTemp.Split(CChar(" ")) 'Element 3 is zombie kills
+            'Increase
+            intRank += 1
+            'Check
+            If intZombieKills > CInt(astrTempSplit(3)) Then
+                'Set
+                blnRankBeat = True
+                'Exit
+                Exit While
+            End If
+        End While
+
+        'Close
+        ioSR.Close()
+
+        'Check if rank beat
+        If blnRankBeat Then
+            WriteToDatabase(intRank, intWPMToBe)
+        End If
+
+    End Sub
+
+    Private Sub CompareHighscoresAccess(intWPMToBe As Integer)
 
         'Declare
         Dim strSQL As String = "SELECT Kills FROM HighscoresTable ORDER BY Rank ASC"
@@ -1209,6 +1312,9 @@ Public Class frmGame
         Dim dbDataAdapter As System.Data.OleDb.OleDbDataAdapter
         Dim intRank As Integer = 0
         Dim blnRankBeat As Boolean = False
+
+        'Set
+        blnHighscoresIsAccess = False
 
         'Prevent errors
         Try
@@ -1231,30 +1337,51 @@ Public Class frmGame
                 End If
             Next
 
+            'Set
+            blnHighscoresIsAccess = True
+
         Catch ex As Exception
-            'Error message
-            MessageBox.Show("There was an error, make sure the highscore database is in the correct path. " &
-                            "Also install and register Microsoft Provider 12.0 if not done already.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            'Error, possibly this computer doesn't have Microsoft Provider 12.0 installed or registered
+            CompareHighscoresTextFile(intWPMToBe)
 
         End Try
 
         'Check if rank beat
-        If blnRankBeat Then
-            'Declare
-            Dim strInputBox As String = ""
-            'Get user info
-            While strInputBox = ""
-                strInputBox = InputBox("You beat a highscore, please enter your name...", "Last Stand", "")
-                'Check for invalid string characters
-                If CheckStringForInvalidCharacters(strInputBox) Then
-                    MessageBox.Show("Can only accept standard characters. Please try again...", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                    strInputBox = ""
-                End If
-            End While
+        If blnHighscoresIsAccess Then
+            If blnRankBeat Then
+                WriteToDatabase(intRank, intWPMToBe)
+            End If
+        End If
+
+    End Sub
+
+    Private Sub WriteToDatabase(intRank As Integer, intWPMToBe As Integer)
+
+
+        'Declare
+        Dim strInputBox As String = ""
+
+        'Get user info
+        While strInputBox = ""
+            strInputBox = InputBox("You beat a highscore, please enter your name...", "Last Stand", "")
+            'Check for invalid string characters
+            If CheckStringForInvalidCharacters(strInputBox) Then
+                MessageBox.Show("Can only accept standard characters. Please try again...", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                strInputBox = ""
+            End If
+        End While
+
+        'Check
+        If blnHighscoresIsAccess Then
             'Enter the information into the database
-            EnterTheInformationIntoTheDatabase(strInputBox, intRank, intWPMToBe)
+            EnterTheInformationIntoTheDatabaseAccess(strInputBox, intRank, intWPMToBe)
             'Reload the highscore database
-            LoadHighscoresString()
+            LoadHighscoresStringAccess(False)
+        Else
+            'Enter the information into the database
+            EnterTheInformationIntoTheDatabaseTextFile(strInputBox, intRank, intWPMToBe)
+            'Reload the highscore database
+            LoadHighscoresStringTextFile()
         End If
 
     End Sub
@@ -1307,10 +1434,10 @@ Public Class frmGame
 
     End Function
 
-    Private Sub EnterTheInformationIntoTheDatabase(strName As String, intRankToBe As Integer, intWPMToBe As Integer)
+    Private Sub EnterTheInformationIntoTheDatabaseAccess(strName As String, intRank As Integer, intWPMToBe As Integer)
 
         'Declare
-        Dim strSQL As String = "UPDATE HighscoresTable SET [Player Name]='" & strName & "',WPM=" & intWPMToBe & ",Kills=" & intZombieKills & " WHERE Rank=" & intRankToBe
+        Dim strSQL As String = "UPDATE HighscoresTable SET [Player Name]='" & strName & "',WPM=" & intWPMToBe & ",Kills=" & intZombieKills & " WHERE Rank=" & intRank
         Dim strConnection As String = "Provider = Microsoft.ACE.OLEDB.12.0;Data Source = Highscores.accdb"
         Dim dtProperties As New DataTable()
         Dim dbDataAdapter As System.Data.OleDb.OleDbDataAdapter
@@ -1328,11 +1455,57 @@ Public Class frmGame
             dtProperties.AcceptChanges()
 
         Catch ex As Exception
-            'Error message
-            MessageBox.Show("There was an error, make sure the highscore database is in the correct path. " &
-                            "Also install and register Microsoft Provider 12.0 if not done already.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            'No debug, previously checked before made it here
 
         End Try
+
+    End Sub
+
+    Private Sub EnterTheInformationIntoTheDatabaseTextFile(strName As String, intRank As Integer, intWPMToBe As Integer)
+
+        'Notes: If there was an error, the database content from the text file will load after. 
+        '       This is a backup to not having the correct database path, an install and registered Microsoft Provider 12.0.
+
+        'Declare
+        Dim ioSR As IO.StreamReader
+        Dim astrLine() As String = Nothing
+
+        'Set
+        ioSR = IO.File.OpenText(strDirectory & "Images\Highscores\Highscores.txt")
+
+        'Use loop to get scores
+        While ioSR.Peek <> -1
+            If astrLine Is Nothing Then
+                ReDim Preserve astrLine(0)
+                astrLine(0) = ioSR.ReadLine
+            Else
+                ReDim Preserve astrLine(astrLine.GetUpperBound(0) + 1)
+                astrLine(astrLine.GetUpperBound(0)) = ioSR.ReadLine
+            End If
+        End While
+
+        'Close
+        ioSR.Close()
+
+        'Change part of the array where the rank was beat
+        astrLine(intRank - 1) = CStr(intRank) & ". " & intWPMToBe & " WPM " & intZombieKills & " zombie kills - " & strName
+
+        'Delete file
+        Kill(strDirectory & "Images\Highscores\Highscores.txt")
+
+        'Write to file
+        Dim ioSW As IO.StreamWriter
+
+        'Set
+        ioSW = IO.File.AppendText(strDirectory & "Images\Highscores\Highscores.txt")
+
+        'Write array
+        For intLoop As Integer = 0 To astrLine.GetUpperBound(0)
+            ioSW.WriteLine(astrLine(intLoop))
+        Next
+
+        'Close
+        ioSW.Close()
 
     End Sub
 
@@ -1413,6 +1586,17 @@ Public Class frmGame
 
     End Sub
 
+    Private Sub DrawDatabaseType(strText As String)
+
+        'Draw
+        DrawText(gGraphics, strText, 34, Color.Black, 32, 22, ORIGINALSCREENWIDTH, 100) 'Shadow
+        DrawText(gGraphics, strText, 34, Color.Black, 33, 23, ORIGINALSCREENWIDTH, 100) 'Shadow
+        DrawText(gGraphics, strText, 34, Color.Black, 34, 24, ORIGINALSCREENWIDTH, 100) 'Shadow
+        DrawText(gGraphics, strText, 34, Color.Black, 35, 25, ORIGINALSCREENWIDTH, 100) 'Shadow
+        DrawText(gGraphics, strText, 34, Color.Red, 30, 20, ORIGINALSCREENWIDTH, 100)
+
+    End Sub
+
     Private Sub HighscoresScreen()
 
         'Paint on canvas
@@ -1428,6 +1612,13 @@ Public Class frmGame
         DrawText(gGraphics, strHighscores, 34, Color.Black, 35, 225, ORIGINALSCREENWIDTH, ORIGINALSCREENHEIGHT) 'Shadow
         DrawText(gGraphics, strHighscores, 34, Color.Red, 30, 220, ORIGINALSCREENWIDTH, ORIGINALSCREENHEIGHT)
 
+        'Check if Access
+        If blnHighscoresIsAccess Then
+            DrawDatabaseType("Database type is Access")
+        Else
+            DrawDatabaseType("Database type is text file")
+        End If
+
         'Back button
         If intCanvasShow = 1 Then
             'Draw back text as hovered
@@ -1439,7 +1630,10 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub LoadHighscoresString()
+    Private Sub LoadHighscoresStringAccess(Optional blnRunErrorCode As Boolean = True)
+
+        'Set
+        blnHighscoresIsAccess = False
 
         'Reset string
         strHighscores = ""
@@ -1470,12 +1664,43 @@ Public Class frmGame
                 End If
             Next
 
+            'Set
+            blnHighscoresIsAccess = True
+
         Catch ex As Exception
-            'Error message
-            MessageBox.Show("There was an error, make sure the highscore database is in the correct path. " &
-                            "Also install and register Microsoft Provider 12.0 if not done already.", "Last Stand", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            'Error, possibly this computer doesn't have Microsoft Provider 12.0 installed or registered
+            If blnRunErrorCode Then
+                LoadHighscoresStringTextFile()
+            End If
 
         End Try
+
+    End Sub
+
+    Private Sub LoadHighscoresStringTextFile()
+
+        'Notes: If there was an error, the database content from the text file will load after. 
+        '       This is a backup to not having the correct database path, an install and registered Microsoft Provider 12.0.
+
+        'Reset
+        strHighscores = ""
+
+        'Declare
+        Dim ioSR As IO.StreamReader
+
+        'Set
+        ioSR = IO.File.OpenText(strDirectory & "Images\Highscores\Highscores.txt")
+
+        'Use loop to get scores
+        While ioSR.Peek <> -1
+            strHighscores &= ioSR.ReadLine
+            If ioSR.Peek <> -1 Then
+                strHighscores &= vbNewLine
+            End If
+        End While
+
+        'Close
+        ioSR.Close()
 
     End Sub
 
@@ -1729,7 +1954,7 @@ Public Class frmGame
                             'Check if hosting
                             If blnHost Then
                                 'Check for first time pin
-                                CheckingForFirstTimePin(False, "8|") 'Joiner won
+                                CheckingForFirstTimePin(False, "6|") 'Joiner won
                             End If
                         End If
                     End If
@@ -1754,7 +1979,7 @@ Public Class frmGame
                             'Check if hosting
                             If blnHost Then
                                 'Check for first time pin
-                                CheckingForFirstTimePin(True, "9|") 'Joiner lost
+                                CheckingForFirstTimePin(True, "7|") 'Joiner lost
                             End If
                         End If
                     End If
@@ -2286,13 +2511,31 @@ Public Class frmGame
             'Paths in the sewer
             If blnMouseInRegion(pntMouse, 389, 329, New Point(230, 427)) Then
                 btmPath = btmPathSewer1
+                'Play light switch
+                If Not blnLightZap1 Then
+                    Dim udcLightZapSound As New clsSound(Me, strDirectory & "Sounds\LightZap.mp3", 1000, gintSoundVolume)
+                    blnLightZap1 = True
+                End If
+                'Exit
+                Exit Sub
             Else
                 If blnMouseInRegion(pntMouse, 368, 306, New Point(1094, 481)) Then
                     btmPath = btmPathSewer2
+                    'Play light switch
+                    If Not blnLightZap2 Then
+                        Dim udcLightZapSound As New clsSound(Me, strDirectory & "Sounds\LightZap.mp3", 1000, gintSoundVolume)
+                        blnLightZap2 = True
+                    End If
+                    'Exit
+                    Exit Sub
                 Else
                     btmPath = btmPathSewer0
                 End If
             End If
+
+            'Reset
+            blnLightZap1 = False
+            blnLightZap2 = False
 
             'Reset
             sblnOnTopOf = False
@@ -2388,7 +2631,7 @@ Public Class frmGame
         btmBlackScreen = Nothing
 
         'Character
-        udcCharacter = New clsCharacter(Me, 100, 325, "udcCharacter")
+        udcCharacter = New clsCharacter(Me, 100, 325, "udcCharacter", intLevel)
 
         'Zombies
         LoadZombies("Level 1 Single Player")
@@ -2410,6 +2653,26 @@ Public Class frmGame
         'Start stop watch
         swhStopWatch = New Stopwatch
         swhStopWatch.Start()
+
+    End Sub
+
+    Private Sub SpawnUnderwaterZombieGameLose()
+
+        'Set
+        blnZombieGameLoseHappened = False
+
+        'Exit
+        Exit Sub
+
+        'Delcare
+        Dim rndNumber As New Random
+
+        'Check if need to spawn zombie
+        Select Case rndNumber.Next(0, 4)
+            Case 1, 2, 3 '75% chance
+                'Create
+                udcUnderwaterZombieGameLose = New clsZombieGameLose(Me, "Underwater", 300, 900)
+        End Select
 
     End Sub
 
@@ -2514,13 +2777,19 @@ Public Class frmGame
         LoadGameObjects(100)
 
         'Character
-        udcCharacter = New clsCharacter(Me, 100, 325, "udcCharacter")
+        udcCharacter = New clsCharacter(Me, 100, 325, "udcCharacter", intLevel)
 
         'Zombies
         LoadZombies("Level 1 Single Player")
 
         'Set
         btmLoadingBar = btmLoadingBar100
+
+
+
+        SpawnUnderwaterZombieGameLose()
+
+
 
         'Set
         intCanvasShow = 1 'Means completely loaded
@@ -2721,6 +2990,8 @@ Public Class frmGame
                     btmDeathOverlay1 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\DeathOverlay1.jpg"))
                     btmDeathOverlay2 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\DeathOverlay2.jpg"))
                     btmDeathOverlay3 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\DeathOverlay3.jpg"))
+                    'Win overlay
+                    btmWinOverlay = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\WinOverlay.jpg"))
                     'Versus win or lose
                     btmYouWon = New Bitmap(Image.FromFile(strDirectory & "Images\Versus\YouWon.png"))
                     btmYouLost = New Bitmap(Image.FromFile(strDirectory & "Images\Versus\YouLost.png"))
@@ -2730,6 +3001,8 @@ Public Class frmGame
                     btmBlackScreen50 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\BlackScreen50.png"))
                     btmBlackScreen75 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\BlackScreen75.png"))
                     btmBlackScreen100 = New Bitmap(Image.FromFile(strDirectory & "Images\Game Play\BlackScreen100.png"))
+                    'Zombies that produce game lose
+                    gbtmUnderwaterZombieGameLose = New Bitmap(Image.FromFile(strDirectory & "Images\ZombieGameLose\UnderwaterZombieGameLose.png"))
                 Case 100
                     'Set
                     sblnFirstTimeLoadingGameObjects = False
@@ -2924,6 +3197,8 @@ Public Class frmGame
                 ShowNextScreenAndExitMenu(1, 0)
                 'Reset fog
                 ResetFog()
+                'Options sound
+                udcAmbianceOptionsSound = New clsSound(Me, strDirectory & "Sounds\AmbianceOptions.mp3", 10000, gintSoundVolume, True) '38 seconds + extra
                 'Exit
                 Exit Sub
             End If
@@ -2971,11 +3246,15 @@ Public Class frmGame
             'Back was clicked
             If blnMouseInRegion(pntMouse, 190, 74, pntBackText) Then
                 'Menu sound
-                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 39000, gintSoundVolume, True) '38 seconds + extra
+                udcAmbianceSound = New clsSound(Me, strDirectory & "Sounds\Ambiance.mp3", 21000, gintSoundVolume, True) '38 seconds + extra
                 'Set
                 ChangeCanvasModeAndChangeCanvasShowAndPlayZombieSound(0, 0)
                 'Restart fog
                 RestartFog()
+                'Stop options sound
+                If udcAmbianceOptionsSound IsNot Nothing Then
+                    udcAmbianceOptionsSound.StopAndCloseSound()
+                End If
                 'Exit
                 Exit Sub
             End If
@@ -3520,7 +3799,7 @@ Public Class frmGame
             End If
 
             'Exit if reloading, or game over
-            If udcCharacter.IsReloading Or blnEndingGameCantType Or udcCharacter.BulletsUsed = 30 Then
+            If udcCharacter.IsReloading Or blnEndingGameCantType Or udcCharacter.BulletsUsed >= 30 Then
                 Exit Sub
             End If
 
@@ -3631,7 +3910,7 @@ Public Class frmGame
             'Check if hoster or joiner
             If blnHost Then
                 'Exit if reloading, or game over
-                If udcCharacterOne.IsReloading Or blnEndingGameCantType Or udcCharacterOne.BulletsUsed = 30 Then
+                If udcCharacterOne.IsReloading Or blnEndingGameCantType Or udcCharacterOne.BulletsUsed >= 30 Then
                     Exit Sub
                 End If
                 'Check for spacebar and count bullets
@@ -3642,7 +3921,7 @@ Public Class frmGame
                 CheckTheWordBeingTyped(e, udcCharacterOne, audcZombiesOne)
             Else
                 'Exit if reloading, or game over
-                If udcCharacterTwo.IsReloading Or blnEndingGameCantType Or udcCharacterTwo.BulletsUsed = 30 Then
+                If udcCharacterTwo.IsReloading Or blnEndingGameCantType Or udcCharacterTwo.BulletsUsed >= 30 Then
                     Exit Sub
                 End If
                 'Check for spacebar and count bullets
@@ -4021,14 +4300,14 @@ Public Class frmGame
         'Load in a special way
         If blnHost Then
             'Character one
-            udcCharacterOne = New clsCharacter(Me, 100, 300, "udcCharacterOne", False) 'Host
+            udcCharacterOne = New clsCharacter(Me, 100, 300, "udcCharacterOne", intLevel, False) 'Host
             'Character two
-            udcCharacterTwo = New clsCharacter(Me, 200, 350, "udcCharacterTwo", True) 'Join
+            udcCharacterTwo = New clsCharacter(Me, 200, 350, "udcCharacterTwo", intLevel, True) 'Join
         Else
             'Character one
-            udcCharacterOne = New clsCharacter(Me, 100, 300, "udcCharacterOne", True) 'Host
+            udcCharacterOne = New clsCharacter(Me, 100, 300, "udcCharacterOne", intLevel, True) 'Host
             'Character two
-            udcCharacterTwo = New clsCharacter(Me, 200, 350, "udcCharacterTwo", False) 'Join
+            udcCharacterTwo = New clsCharacter(Me, 200, 350, "udcCharacterTwo", intLevel, False) 'Join
         End If
 
         'Zombies
@@ -4137,6 +4416,8 @@ Public Class frmGame
                 Case "4" 'Not used
                 Case "5" 'Show join reloading
                     udcCharacterTwo.Reload()
+                Case "6" 'Not used
+                Case "7" 'Not used
             End Select
 
         Else 'Joiner
@@ -4167,13 +4448,7 @@ Public Class frmGame
                 Case "5" 'Show host reloading
                     'Reload
                     udcCharacterOne.Reload()
-                Case "6" 'Host zombie needs to be prepared to die
-                    'audcZombiesOne(CInt(strGetBlockData(strData, 1))).MarkedToDie = True
-                    'audcZombiesOne(CInt(strGetBlockData(strData, 1))).IsDead = True
-                Case "7" 'Join zombie needs to be prepared to die
-                    'audcZombiesTwo(CInt(strGetBlockData(strData, 1))).MarkedToDie = True
-                    'audcZombiesTwo(CInt(strGetBlockData(strData, 1))).IsDead = True
-                Case "8", "9" 'End game, hoster died
+                Case "6", "7" 'End game, hoster died
                     'Set
                     blnEndingGameCantType = True
                     'Set
@@ -4195,18 +4470,6 @@ Public Class frmGame
             End Select
 
         End If
-
-        ''Check if hosting audcZombiesOne
-        'If blnHost Then
-        '    'Send data
-        '    gSendData("6|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
-        'End If
-
-        ''Check if joining audcZombiesTwo
-        'If blnHost Then
-        '    'Send data
-        '    gSendData("7|" & CStr(intLoop)) 'This marks the zombie to be dead for the joiner
-        'End If
 
     End Sub
 

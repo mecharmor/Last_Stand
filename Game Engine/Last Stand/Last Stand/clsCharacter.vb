@@ -12,6 +12,7 @@ Public Class clsCharacter
     Private intSpotY As Integer = 0
     Private _strThisObjectName As String = ""
     Private _intBullets As Integer = 0 'Gun bullets
+    Private _intLevel As Integer = 1 'Starting level
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
 
     'For error preventing
@@ -50,14 +51,17 @@ Public Class clsCharacter
     'Send data
     Private blnSendData As Boolean = False
 
-    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, Optional blnImitation As Boolean = False,
-                   Optional blnStartAnimation As Boolean = False)
+    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, intLevel As Integer,
+                   Optional blnImitation As Boolean = False, Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
 
         'Set
         _strThisObjectName = strThisObjectName
+
+        'Set
+        _intLevel = intLevel
 
         'Set
         _blnImitation = blnImitation
@@ -89,32 +93,11 @@ Public Class clsCharacter
         'Set
         _intAnimatingDelay = intAnimatingDelay
 
-        'Start thread, timed to repeat incase of too much aborting
-        While Not blnStart()
-        End While
+        'Start thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
 
     End Sub
-
-    Private Function blnStart() As Boolean
-
-        'Declare
-        Dim blnPassed As Boolean = False
-
-        'Start thread
-        Try
-            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-            thrAnimating.Start()
-            'Set
-            blnPassed = True
-        Catch ex As Exception
-            'No debug, if got here, typed way too fast
-            blnPassed = False
-        End Try
-
-        'Return
-        Return blnPassed
-
-    End Function
 
     Public ReadOnly Property CharacterImage() As Bitmap
 
@@ -362,10 +345,29 @@ Public Class clsCharacter
                             Case "udcCharacter"
                                 btmCharacter = gbtmCharacterRunning(intFrame - 26) '27 - 26 = 1 in the array
                         End Select
-                        'Play reloading sound
+                        'Play foot steps sound
                         Select Case intFrame
                             Case 32, 39, 41
-                                Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1250, gintSoundVolume)
+                                Select Case _intLevel
+                                    Case 1
+                                        Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
+                                    Case 2
+                                        If intFrame = 32 Or intFrame = 41 Then
+                                            Dim udcWaterFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                          "Sounds\WaterFootStepLeft.mp3", 1000, gintSoundVolume)
+                                        Else
+                                            Dim udcWaterFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                           "Sounds\WaterFootStepRight.mp3", 1000, gintSoundVolume)
+                                        End If
+                                    Case 3
+                                        If intFrame = 32 Or intFrame = 41 Then
+                                            Dim udcGravelFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                           "Sounds\GravelFootStepLeft.mp3", 2000, gintSoundVolume)
+                                        Else
+                                            Dim udcGravelFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                            "Sounds\GravelFootStepRight.mp3", 1000, gintSoundVolume)
+                                        End If
+                                End Select
                         End Select
                         'Check if stop running
                         If intFrame = 42 Then
