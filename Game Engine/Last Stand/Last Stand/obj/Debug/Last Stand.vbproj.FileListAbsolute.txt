@@ -134,7 +134,3 @@ E:\Game Engine\On Fire\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.reso
 E:\Game Engine\On Fire\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache
 E:\Game Engine\On Fire\Last Stand\Last Stand\bin\Debug\Highscores.accdb
 I:\Game Engine\On Fire\Last Stand\Last Stand\bin\Debug\Highscores.accdb
-C:\Users\Ultrabook\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe.config
-C:\Users\Ultrabook\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.exe
-C:\Users\Ultrabook\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.xml
-C:\Users\Ultrabook\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.pdb

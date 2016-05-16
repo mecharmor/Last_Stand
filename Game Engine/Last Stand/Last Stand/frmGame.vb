@@ -1011,8 +1011,6 @@ Public Class frmGame
                 End If
             Next
 
-            Debug.Print(CStr(intZombieKills))
-
             'Paint background and word
             PaintBackgroundAndWord()
 
@@ -1616,7 +1614,7 @@ Public Class frmGame
         If blnHighscoresIsAccess Then
             DrawDatabaseType("Database type is Access")
         Else
-            DrawDatabaseType("Database type is text file")
+            DrawDatabaseType("Database type is Text File")
         End If
 
         'Back button
@@ -2280,7 +2278,7 @@ Public Class frmGame
             'Hover sound
             If thrHoverSoundDelay Is Nothing Then
                 'Play sound
-                Dim udcButtonHoverSound As New clsSound(Me, strDirectory & "Sounds\ButtonHover.mp3", 3000, gintSoundVolume)
+                Dim udcButtonHoverSound As New clsSound(Me, strDirectory & "Sounds\ButtonHover.mp3", 500, gintSoundVolume)
                 'Start a waiting thread of 2500 ms
                 thrHoverSoundDelay = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf HoverSoundWaiting))
                 thrHoverSoundDelay.Start()
@@ -2552,8 +2550,8 @@ Public Class frmGame
 
     Private Sub HoverSoundWaiting()
 
-        'Sleep for 3000 ms
-        System.Threading.Thread.Sleep(3000)
+        'Sleep for 500 ms
+        System.Threading.Thread.Sleep(500)
 
         'Set
         thrHoverSoundDelay = Nothing
@@ -2571,7 +2569,7 @@ Public Class frmGame
 
         'Play sound
         If blnPlayPressedSound Then
-            Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 3000, gintSoundVolume, False)
+            Dim udcButtonPressedSound As New clsSound(Me, strDirectory & "Sounds\ButtonPressed.mp3", 1000, gintSoundVolume, False)
         End If
 
     End Sub
@@ -2635,6 +2633,12 @@ Public Class frmGame
 
         'Zombies
         LoadZombies("Level 1 Single Player")
+
+        'Check level for game losing zombies
+        Select Case intLevel
+            Case 2
+                SpawnUnderwaterZombieGameLose()
+        End Select
 
         'Helicopter
         If blnLoadHelicopter Then
@@ -2784,12 +2788,6 @@ Public Class frmGame
 
         'Set
         btmLoadingBar = btmLoadingBar100
-
-
-
-        SpawnUnderwaterZombieGameLose()
-
-
 
         'Set
         intCanvasShow = 1 'Means completely loaded
@@ -3788,31 +3786,58 @@ Public Class frmGame
         'Check if playing game
         If intCanvasMode = 3 Then
 
-            'Stop executing code if level over
-            If blnLevelCompleted Then
-                Exit Sub
-            End If
+            'Check key press
+            Select Case Asc(e.KeyChar)
 
-            'Exit if character doesn't exist
-            If udcCharacter Is Nothing Then
-                Exit Sub
-            End If
+                Case 39
+                    'Running Forward
+                    If Not blnGameIsVersus Then
+                        If udcCharacter IsNot Nothing Then
+                            If Not udcCharacter.EndOfLevel Then
+                                If Not blnLevelCompleted Then
+                                    If Not udcCharacter.IsRunning And Not udcCharacter.IsReloading And Not udcCharacter.IsShooting Then
+                                        'Run
+                                        udcCharacter.Running()
+                                        Exit Sub
+                                    End If
+                                    If Not udcCharacter.IsRunning And udcCharacter.IsReloading Then
+                                        'Set
+                                        udcCharacter.PrepareToRun = True
+                                        Exit Sub
+                                    End If
+                                    If Not udcCharacter.IsRunning And udcCharacter.IsShooting Then
+                                        'Set
+                                        udcCharacter.PrepareToRun = True
+                                        Exit Sub
+                                    End If
+                                End If
+                            End If
+                        End If
+                    End If
 
-            'Exit if reloading, or game over
-            If udcCharacter.IsReloading Or blnEndingGameCantType Or udcCharacter.BulletsUsed >= 30 Then
-                Exit Sub
-            End If
+                Case Else
+                    'Stop executing code if level over
+                    If blnLevelCompleted Then
+                        Exit Sub
+                    End If
+                    'Exit if character doesn't exist
+                    If udcCharacter Is Nothing Then
+                        Exit Sub
+                    End If
+                    'Exit if reloading, or game over
+                    If udcCharacter.IsReloading Or blnEndingGameCantType Or udcCharacter.BulletsUsed >= 30 Then
+                        Exit Sub
+                    End If
+                    'Check for spacebar and count bullets
+                    If CheckForSpacebar(e, udcCharacter) Then
+                        Exit Sub
+                    End If
+                    'Check the word being typed
+                    CheckTheWordBeingTyped(e, udcCharacter, audcZombies)
+                    'Exit
+                    Exit Sub
 
-            'Check for spacebar and count bullets
-            If CheckForSpacebar(e, udcCharacter) Then
-                Exit Sub
-            End If
-
-            'Check the word being typed
-            CheckTheWordBeingTyped(e, udcCharacter, audcZombies)
-
-            'Exit
-            Exit Sub
+            End Select
 
         End If
 
@@ -4497,34 +4522,36 @@ Public Class frmGame
 
     Private Sub frmGame_KeyDown(sender As Object, e As KeyEventArgs) Handles Me.KeyDown
 
-        'If playing the game
-        If intCanvasMode = 3 Then
-            'Running Forward
-            If Not blnGameIsVersus Then
-                If udcCharacter IsNot Nothing Then
-                    If Not blnLevelCompleted Then
-                        Select Case e.KeyCode
-                            Case Keys.Right
-                                If Not udcCharacter.IsRunning And Not udcCharacter.IsReloading And Not udcCharacter.IsShooting Then
-                                    'Run
-                                    udcCharacter.Running()
-                                    Exit Sub
-                                End If
-                                If Not udcCharacter.IsRunning And udcCharacter.IsReloading Then
-                                    'Set
-                                    udcCharacter.PrepareToRun = True
-                                    Exit Sub
-                                End If
-                                If Not udcCharacter.IsRunning And udcCharacter.IsShooting Then
-                                    'Set
-                                    udcCharacter.PrepareToRun = True
-                                    Exit Sub
-                                End If
-                        End Select
-                    End If
-                End If
-            End If
-        End If
+        ''If playing the game
+        'If intCanvasMode = 3 Then
+        '    'Running Forward
+        '    If Not blnGameIsVersus Then
+        '        If udcCharacter IsNot Nothing Then
+        '            If Not udcCharacter.EndOfLevel Then
+        '                If Not blnLevelCompleted Then
+        '                    Select Case e.KeyCode
+        '                        Case Keys.Right
+        '                            If Not udcCharacter.IsRunning And Not udcCharacter.IsReloading And Not udcCharacter.IsShooting Then
+        '                                'Run
+        '                                udcCharacter.Running()
+        '                                Exit Sub
+        '                            End If
+        '                            If Not udcCharacter.IsRunning And udcCharacter.IsReloading Then
+        '                                'Set
+        '                                udcCharacter.PrepareToRun = True
+        '                                Exit Sub
+        '                            End If
+        '                            If Not udcCharacter.IsRunning And udcCharacter.IsShooting Then
+        '                                'Set
+        '                                udcCharacter.PrepareToRun = True
+        '                                Exit Sub
+        '                            End If
+        '                    End Select
+        '                End If
+        '            End If
+        '        End If
+        '    End If
+        'End If
 
     End Sub
 

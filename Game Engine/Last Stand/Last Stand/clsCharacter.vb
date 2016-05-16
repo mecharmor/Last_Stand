@@ -147,8 +147,6 @@ Public Class clsCharacter
         'Continue
         While blnKeepUsingAnimatingThread
 
-            'Debug.Print("CHARACTER")
-
             'Check for first time pass shooting
             If blnFirstTimeShootingPass Then
                 'Default
@@ -328,6 +326,8 @@ Public Class clsCharacter
                         Case "udcCharacterTwo"
                             btmCharacter = gbtmCharacterReloadBlue(21)
                     End Select
+                    'Set
+                    blnIsReloading = False
                     'Reset bullets
                     _intBullets = 0
 
@@ -439,12 +439,6 @@ Public Class clsCharacter
             'Abort thread
             thrAnimating.Abort()
             blnAborted = True
-
-            'While thrAnimating.IsAlive
-            '    System.Threading.Thread.Sleep(1)
-            '    Debug.Print("CHARACTER SHOT")
-            'End While
-
             'Set
             blnIsShooting = True
             'Set
@@ -471,12 +465,6 @@ Public Class clsCharacter
                 'Abort thread
                 thrAnimating.Abort()
                 blnAborted = True
-
-                'While thrAnimating.IsAlive
-                '    System.Threading.Thread.Sleep(1)
-                '    Debug.Print("CHARACTER RELOAD")
-                'End While
-
                 'Set
                 blnIsReloading = True
                 'Set
@@ -550,12 +538,6 @@ Public Class clsCharacter
                             blnAborted = True
                         End If
                     End While
-
-                    'While thrAnimating.IsAlive
-                    '    System.Threading.Thread.Sleep(1)
-                    '    Debug.Print("CHARACTER ISRUNNING")
-                    'End While
-
                     'Set
                     pntCharacter.X = intSpotX
                     'Stand
@@ -629,12 +611,6 @@ Public Class clsCharacter
                     blnAborted = True
                 End If
             End While
-
-            'While thrAnimating.IsAlive
-            '    System.Threading.Thread.Sleep(1)
-            '    Debug.Print("CHARACTER RUNNING")
-            'End While
-
             'Set
             blnIsRunning = True
             'Set
