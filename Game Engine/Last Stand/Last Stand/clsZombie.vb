@@ -5,10 +5,14 @@ Option Infer Off
 
 Public Class clsZombie
 
+    'Constants
+    Private Const ZOMBIE_WALKING_DELAY As Integer = 160
+    Private Const ZOMBIE_DYING_DELAY As Integer = 95
+    Private Const ZOMBIE_PINNING_DELAY As Integer = 185
+
     'Declare
     Private _frmToPass As Form
     Private intFrame As Integer = 1
-    Private blnSwitch As Boolean = False
     Private intSpotX As Integer = 0
     Private intSpotY As Integer = 0
     Private _intSpeed As Integer = 25
@@ -22,20 +26,21 @@ Public Class clsZombie
 
     'Thread
     Private thrAnimating As System.Threading.Thread
-    Private _intAnimatingDelay As Integer = 0
 
     'Dying
     Private blnMarkedToDie As Boolean = False
     Private blnHasPassedMarkToDie As Boolean = False
     Private blnIsDying As Boolean = False
-    Private blnFirstTimeDyingPass As Boolean = False
 
     'Pinning
     Private blnIsPinning As Boolean = False
-    Private blnFirstTimePinningPass As Boolean = False
+    Private intPinXYValueChanged As Integer = 0
 
     'Dead for painting on background
     Private blnDead As Boolean = False
+
+    'Timer
+    Private tmrAnimation As New System.Timers.Timer()
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
                    Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
@@ -67,6 +72,12 @@ Public Class clsZombie
         intSpotY = intSpawnY
         pntZombie = New Point(intSpotX, intSpotY)
 
+        'Set timer
+        tmrAnimation.AutoReset = True
+
+        'Add handler for the timer animation
+        AddHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
+
         'Start
         If blnStartAnimation Then
             Start()
@@ -74,13 +85,41 @@ Public Class clsZombie
 
     End Sub
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = 175, Optional blnSpawn As Boolean = True)
+    Private Sub ElapsedAnimation(sender As Object, e As EventArgs)
+
+        'Disable timer
+        tmrAnimation.Enabled = False
+
+        'Start thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
+
+    End Sub
+
+    Private Sub SetFrameAndPicture(intFrameToBe As Integer, btmZombiePicture As Bitmap, btmZombiePictureRed As Bitmap, btmZombiePictureBlue As Bitmap)
+
+        'Set
+        intFrame = intFrameToBe
+
+        'Preset
+        Select Case _strThisObjectNameCorrespondingToCharacter
+            Case "udcCharacter"
+                btmZombie = btmZombiePicture
+            Case "udcCharacterOne"
+                btmZombie = btmZombiePictureRed
+            Case "udcCharacterTwo"
+                btmZombie = btmZombiePictureBlue
+        End Select
+
+    End Sub
+
+    Public Sub Start(Optional intAnimatingDelay As Integer = ZOMBIE_WALKING_DELAY, Optional blnSpawn As Boolean = True)
+
+        'Set timer delay
+        tmrAnimation.Interval = CDbl(intAnimatingDelay)
 
         'Set
         _blnSpawned = blnSpawn
-
-        'Set
-        _intAnimatingDelay = intAnimatingDelay
 
         'Start thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
@@ -129,23 +168,59 @@ Public Class clsZombie
 
         'Abort animating
         If thrAnimating IsNot Nothing Then
-            If thrAnimating.IsAlive Then
-                thrAnimating.Abort()
-                thrAnimating = Nothing
-            End If
+            'Wait
+            While thrAnimating.IsAlive
+            End While
+            'Set
+            thrAnimating = Nothing
+            'Disable timer
+            tmrAnimation.Enabled = False
+            'Stop and dispose timer
+            tmrAnimation.Stop()
+            tmrAnimation.Dispose()
+            'Remove handler
+            RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
         End If
 
     End Sub
 
     Private Sub Animating()
 
-        'Continue
-        While Not blnDead
+        'Check frame for movement
+        Select Case intFrame
+            Case 1 To 6
+                'Walking, change point
+                pntZombie.X -= _intSpeed 'Speed they come at
+        End Select
 
-            'Check for first time pass dying
-            If blnFirstTimeDyingPass Then
-                'Set
-                blnFirstTimeDyingPass = False
+        'Check frame
+        Select Case intFrame
+
+            Case 1 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(2, gbtmZombieWalk(0), gbtmZombieWalkRed(0), gbtmZombieWalkBlue(0))
+
+            Case 2 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(3, gbtmZombieWalk(1), gbtmZombieWalkRed(1), gbtmZombieWalkBlue(1))
+
+            Case 3 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(4, gbtmZombieWalk(2), gbtmZombieWalkRed(2), gbtmZombieWalkBlue(2))
+
+            Case 4 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(5, gbtmZombieWalk(3), gbtmZombieWalkRed(3), gbtmZombieWalkBlue(3))
+
+            Case 5 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(6, gbtmZombieWalk(2), gbtmZombieWalkRed(2), gbtmZombieWalkBlue(2))
+
+            Case 6 'Walking, delay here is ZOMBIE_WALKING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(1, gbtmZombieWalk(1), gbtmZombieWalkRed(1), gbtmZombieWalkBlue(1))
+
+            Case 7 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Declare
                 Dim rndNumber As New Random
                 'Play sound of death
@@ -153,216 +228,83 @@ Public Class clsZombie
                                                   ".mp3", 2000, gintSoundVolume)
                 'Set frame death
                 intFrameDeath = rndNumber.Next(1, 3)
-                'Change frame immediately
-                intFrame = 1
-                Select Case intFrameDeath
-                    Case 1
-                        Select Case _strThisObjectNameCorrespondingToCharacter
-                            Case "udcCharacter"
-                                btmZombie = gbtmZombieDeath1(0)
-                            Case "udcCharacterOne"
-                                btmZombie = gbtmZombieDeath1Red(0)
-                            Case "udcCharacterTwo"
-                                btmZombie = gbtmZombieDeath1Blue(0)
-                        End Select
-                    Case 2
-                        Select Case _strThisObjectNameCorrespondingToCharacter
-                            Case "udcCharacter"
-                                btmZombie = gbtmZombieDeath2(0)
-                            Case "udcCharacterOne"
-                                btmZombie = gbtmZombieDeath2Red(0)
-                            Case "udcCharacterTwo"
-                                btmZombie = gbtmZombieDeath2Blue(0)
-                        End Select
-                End Select
-            End If
+                'Set frame, frame death, and picture
+                SetFrameFrameDeathAndPicture(8, rndNumber.Next(1, 3), 0)
 
-            'Check for first time pass pinning
-            If blnFirstTimePinningPass Then
-                'Set
-                blnFirstTimePinningPass = False
-                'Change frame immediately
-                intFrame = 1
-                Select Case _strThisObjectNameCorrespondingToCharacter
-                    Case "udcCharacter"
-                        btmZombie = gbtmZombiePin(0)
-                    Case "udcCharacterOne"
-                        btmZombie = gbtmZombiePinRed(0)
-                    Case "udcCharacterTwo"
-                        btmZombie = gbtmZombiePinBlue(0)
-                End Select
-            End If
+            Case 8 'Dying, delay here is ZOMBIE_DYING_DELAY
+                'Set frame, frame death, and picture
+                SetFrameFrameDeathAndPicture(9, intFrameDeath, 1)
 
-            'Sleep
-            System.Threading.Thread.Sleep(_intAnimatingDelay)
+            Case 9 'Dying, delay here is ZOMBIE_DYING_DELAY
+                'Set frame, frame death, and picture
+                SetFrameFrameDeathAndPicture(10, intFrameDeath, 2)
 
-            'Check frame, if walking, dying or pinning
-            If blnIsDying Then
+            Case 10 'Dying, delay here is ZOMBIE_DYING_DELAY
+                'Set frame, frame death, and picture
+                SetFrameFrameDeathAndPicture(11, intFrameDeath, 3)
 
-                'Check which frame death, sleep is 110
-                Select Case intFrameDeath
-                    Case 1
-                        Select Case _strThisObjectNameCorrespondingToCharacter
-                            Case "udcCharacter"
-                                FrameDeath(gbtmZombieDeath1)
-                            Case "udcCharacterOne"
-                                FrameDeath(gbtmZombieDeath1Red)
-                            Case "udcCharacterTwo"
-                                FrameDeath(gbtmZombieDeath1Blue)
-                        End Select
-                    Case 2
-                        Select Case _strThisObjectNameCorrespondingToCharacter
-                            Case "udcCharacter"
-                                FrameDeath(gbtmZombieDeath2)
-                            Case "udcCharacterOne"
-                                FrameDeath(gbtmZombieDeath2Red)
-                            Case "udcCharacterTwo"
-                                FrameDeath(gbtmZombieDeath2Blue)
-                        End Select
-                End Select
+            Case 11 'Dying, delay here is ZOMBIE_DYING_DELAY
+                'Set frame, frame death, and picture
+                SetFrameFrameDeathAndPicture(12, intFrameDeath, 4)
 
-                'Check for completely dead
-                If blnDead Then
-                    Exit While
-                End If
+            Case 12 'Dying, delay here is ZOMBIE_DYING_DELAY
+                'Set picture
+                SetDeathTypePicture(5)
+                'Set dead
+                blnDead = True
 
-            Else
+            Case 13 'Pinning, delay here is ZOMBIE_PINNING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(14, gbtmZombiePin(0), gbtmZombiePinRed(0), gbtmZombiePinBlue(0))
 
-                'Pinning, sleep is 200
-                If blnIsPinning Then
+            Case 14 'Pinning, delay here is ZOMBIE_PINNING_DELAY
+                'Set frame and picture
+                SetFrameAndPicture(13, gbtmZombiePin(1), gbtmZombiePinRed(1), gbtmZombiePinBlue(1))
 
-                    'Check frame
-                    Select Case intFrame
-                        Case 1
-                            intFrame = 2
-                            Select Case _strThisObjectNameCorrespondingToCharacter
-                                Case "udcCharacter"
-                                    btmZombie = gbtmZombiePin(0)
-                                Case "udcCharacterOne"
-                                    btmZombie = gbtmZombiePinRed(0)
-                                Case "udcCharacterTwo"
-                                    btmZombie = gbtmZombiePinBlue(0)
-                            End Select
-                        Case 2
-                            intFrame = 1
-                            Select Case _strThisObjectNameCorrespondingToCharacter
-                                Case "udcCharacter"
-                                    btmZombie = gbtmZombiePin(1)
-                                Case "udcCharacterOne"
-                                    btmZombie = gbtmZombiePinRed(1)
-                                Case "udcCharacterTwo"
-                                    btmZombie = gbtmZombiePinBlue(1)
-                            End Select
-                    End Select
+        End Select
 
-                Else
-
-                    'Walking, change point
-                    pntZombie.X -= _intSpeed 'Speed they come at
-
-                    'Check if going forward or backwards with the frames (1, 2, 3, 4) or (3, 2, 1) but becomes (1, 2, 3, 4, 3, 2, 1, 2, 3, 4, etc.)
-                    If Not blnSwitch Then
-                        'Check frame
-                        Select Case intFrame 'Sleep here is 175 default
-                            Case 1
-                                intFrame = 2
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(0)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(0)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(0)
-                                End Select
-                            Case 2
-                                intFrame = 3
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(1)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(1)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(1)
-                                End Select
-                            Case 3
-                                intFrame = 4
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(2)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(2)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(2)
-                                End Select
-                            Case 4
-                                intFrame = 1
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(3)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(3)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(3)
-                                End Select
-                                'Switch up time
-                                blnSwitch = True
-                        End Select
-                    Else
-                        'Check frame
-                        Select Case intFrame
-                            Case 1
-                                intFrame = 2
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(2)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(2)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(2)
-                                End Select
-                            Case 2
-                                intFrame = 1
-                                Select Case _strThisObjectNameCorrespondingToCharacter
-                                    Case "udcCharacter"
-                                        btmZombie = gbtmZombieWalk(1)
-                                    Case "udcCharacterOne"
-                                        btmZombie = gbtmZombieWalkRed(1)
-                                    Case "udcCharacterTwo"
-                                        btmZombie = gbtmZombieWalkBlue(1)
-                                End Select
-                                'Switch up time
-                                blnSwitch = False
-                        End Select
-                    End If
-
-                End If
-
-            End If
-
-        End While
+        'Enable timer, unless dead
+        If Not blnDead Then
+            tmrAnimation.Enabled = True
+        End If
 
     End Sub
 
-    Private Sub FrameDeath(btmZombieDeath() As Bitmap)
+    Private Sub SetFrameFrameDeathAndPicture(intFrameToBe As Integer, intFrameDeathToBe As Integer, intZombieDeathIndex As Integer)
 
-        'Check frame
-        Select Case intFrame
+        'Set frame
+        intFrame = intFrameToBe
+
+        'Set frame death type
+        intFrameDeath = intFrameDeathToBe
+
+        'Set picture by death type
+        SetDeathTypePicture(intZombieDeathIndex)
+
+    End Sub
+
+    Private Sub SetDeathTypePicture(intZombieDeathIndex As Integer)
+
+        'Set picture by death type
+        Select Case intFrameDeath
             Case 1
-                intFrame = 2
-                btmZombie = btmZombieDeath(1)
+                Select Case _strThisObjectNameCorrespondingToCharacter
+                    Case "udcCharacter"
+                        btmZombie = gbtmZombieDeath1(intZombieDeathIndex)
+                    Case "udcCharacterOne"
+                        btmZombie = gbtmZombieDeathRed1(intZombieDeathIndex)
+                    Case "udcCharacterTwo"
+                        btmZombie = gbtmZombieDeathBlue1(intZombieDeathIndex)
+                End Select
             Case 2
-                intFrame = 3
-                btmZombie = btmZombieDeath(2)
-            Case 3
-                intFrame = 4
-                btmZombie = btmZombieDeath(3)
-            Case 4
-                intFrame = 5
-                btmZombie = btmZombieDeath(4)
-            Case 5
-                btmZombie = btmZombieDeath(5)
-                'Paint on top of the background
-                blnDead = True
+                Select Case _strThisObjectNameCorrespondingToCharacter
+                    Case "udcCharacter"
+                        btmZombie = gbtmZombieDeath2(intZombieDeathIndex)
+                    Case "udcCharacterOne"
+                        btmZombie = gbtmZombieDeathRed2(intZombieDeathIndex)
+                    Case "udcCharacterTwo"
+                        btmZombie = gbtmZombieDeathBlue2(intZombieDeathIndex)
+                End Select
         End Select
 
     End Sub
@@ -373,6 +315,20 @@ Public Class clsZombie
         Get
             Return blnDead
         End Get
+
+    End Property
+
+    Public Property PinXYValueChanged() As Integer
+
+        'Return
+        Get
+            Return intPinXYValueChanged
+        End Get
+
+        'Set
+        Set(value As Integer)
+            intPinXYValueChanged = value
+        End Set
 
     End Property
 
@@ -426,43 +382,37 @@ Public Class clsZombie
 
     Public Sub Dying()
 
-        'Notes: Dying is more necessary than pinning, therefore this is why the subs do not look exactly the same with order of operations.
+        'Set
+        blnIsDying = True
 
-        'Check for no instance
-        If thrAnimating IsNot Nothing Then
-            'Abort thread
-            If thrAnimating.IsAlive Then
-                'Abort
-                thrAnimating.Abort()
-                'Set
-                blnIsDying = True
-                'Set
-                blnFirstTimeDyingPass = True
-                'Restart thread
-                Start(110)
-            End If
-        End If
+        'Disable timer and set frame
+        DisableTimerAndSetFrame(7)
+
+        'Restart thread
+        Start(ZOMBIE_DYING_DELAY)
+
+    End Sub
+
+    Private Sub DisableTimerAndSetFrame(intFrameToBe As Integer)
+
+        'Disable timer
+        tmrAnimation.Enabled = False
+
+        'Set
+        intFrame = intFrameToBe
 
     End Sub
 
     Public Sub Pin()
 
-        'Notes: Dying is more necessary than pinning, therefore this is why the subs do not look exactly the same with order of operations.
+        'Set
+        blnIsPinning = True
 
-        'Check for no instance
-        If thrAnimating IsNot Nothing Then
-            'Abort thread
-            If thrAnimating.IsAlive Then
-                'Abort
-                thrAnimating.Abort()
-                'Set pinning
-                blnIsPinning = True
-                'Set
-                blnFirstTimePinningPass = True
-                'Restart thread
-                Start(200)
-            End If
-        End If
+        'Disable timer and set frame
+        DisableTimerAndSetFrame(13)
+
+        'Restart thread
+        Start(ZOMBIE_PINNING_DELAY)
 
     End Sub
 

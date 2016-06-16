@@ -5,9 +5,29 @@ Option Infer Off
 
 Public Class clsCharacter
 
+    'Constants
+    Private Const CHARACTER_STAND_DELAY As Integer = 3000
+    Private Const CHARACTER_SHOOT_DELAY As Integer = 175
+    Private Const CHARACTER_RELOAD_DELAY As Integer = 85
+    Private Const CHARACTER_RUN_DELAY As Integer = 65
+    Private Const GAME_BACKGROUND_MOVING_SPEED As Integer = 60
+
+    'Status mode
+    Public Enum eintStatusMode As Integer
+        Stand = 0 'Neutral, this becomes defaulted
+        Shoot = 1
+        Reload = 2
+        Run = 3
+    End Enum
+
+    'Declare enumeration variables
+    Private intStatusModeStartToDo As eintStatusMode 'Used more in the form game
+    Private intStatusModeProcessing As eintStatusMode 'Currently doing
+    Private intStatusModeAboutToDo As eintStatusMode 'About to do after the processing is finished
+
     'Declare
     Private _frmToPass As Form
-    Private intFrame As Integer = 1
+    Private intFrame As Integer = 0
     Private intSpotX As Integer = 0
     Private intSpotY As Integer = 0
     Private _strThisObjectName As String = ""
@@ -15,32 +35,15 @@ Public Class clsCharacter
     Private _intLevel As Integer = 1 'Starting level
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
 
-    'For error preventing
-    Private blnAborted As Boolean = False
-    Private blnKeepUsingAnimatingThread As Boolean = True
-
     'Bitmaps
     Private btmCharacter As Bitmap
     Private pntCharacter As Point
 
     'Thread
     Private thrAnimating As System.Threading.Thread
-    Private _intAnimatingDelay As Integer = 0
 
-    'Shooting
-    Private blnIsShooting As Boolean = False
-    Private blnFirstTimeShootingPass As Boolean = False
-
-    'Reloading
-    Private blnIsReloading As Boolean = False
-    Private blnNeedsToShowReloading As Boolean = False
-    Private blnFirstTimeReloadingPass As Boolean = False
-
-    'Running
-    Private blnIsRunning As Boolean = False
-    Private blnFirstTimeRunningPass As Boolean = False
-    Private blnPrepareToRun As Boolean = False
-    Private blnEndOfLevel As Boolean = False
+    'Stop character from running
+    Private blnStopCharacterFromRunning As Boolean = False
 
     'Reload sound
     Private udcReloadingSound As clsSound
@@ -50,6 +53,9 @@ Public Class clsCharacter
 
     'Send data
     Private blnSendData As Boolean = False
+
+    'Timer
+    Private tmrAnimation As New System.Timers.Timer()
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, intLevel As Integer,
                    Optional blnImitation As Boolean = False, Optional blnStartAnimation As Boolean = False)
@@ -66,20 +72,23 @@ Public Class clsCharacter
         'Set
         _blnImitation = blnImitation
 
-        'Preset
-        Select Case _strThisObjectName
-            Case "udcCharacter"
-                btmCharacter = gbtmCharacterStand(0)
-            Case "udcCharacterOne"
-                btmCharacter = gbtmCharacterStandRed(0)
-            Case "udcCharacterTwo"
-                btmCharacter = gbtmCharacterStandBlue(0)
-        End Select
+        'Set enumerations
+        intStatusModeStartToDo = eintStatusMode.Stand
+        intStatusModeAboutToDo = eintStatusMode.Stand
+
+        'Set frame, status mode processing, and picture
+        SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
 
         'Set
         intSpotX = intSpawnX
         intSpotY = intSpawnY
         pntCharacter = New Point(intSpotX, intSpotY)
+
+        'Set timer
+        tmrAnimation.AutoReset = True
+
+        'Add handler for the timer animation
+        AddHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
 
         'Start
         If blnStartAnimation Then
@@ -88,10 +97,42 @@ Public Class clsCharacter
 
     End Sub
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = 3000)
+    Private Sub ElapsedAnimation(sender As Object, e As EventArgs)
 
-        'Set
-        _intAnimatingDelay = intAnimatingDelay
+        'Disable timer
+        tmrAnimation.Enabled = False
+
+        'Start thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
+
+    End Sub
+
+    Private Sub SetFrameStatusModeProcessingAndPicture(intFrameToBe As Integer, intStatusModeProcessingToBe As eintStatusMode, btmCharacterPicture As Bitmap,
+                                                       Optional btmCharacterPictureRed As Bitmap = Nothing, Optional btmCharacterPictureBlue As Bitmap = Nothing)
+
+        'Set frame
+        intFrame = intFrameToBe
+
+        'Set processing at the moment of using a picture
+        intStatusModeProcessing = intStatusModeProcessingToBe
+
+        'Set picture
+        Select Case _strThisObjectName
+            Case "udcCharacter"
+                btmCharacter = btmCharacterPicture
+            Case "udcCharacterOne"
+                btmCharacter = btmCharacterPictureRed
+            Case "udcCharacterTwo"
+                btmCharacter = btmCharacterPictureBlue
+        End Select
+
+    End Sub
+
+    Public Sub Start(Optional intAnimatingDelay As Integer = CHARACTER_STAND_DELAY)
+
+        'Set timer delay
+        tmrAnimation.Interval = CDbl(intAnimatingDelay)
 
         'Start thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
@@ -121,291 +162,197 @@ Public Class clsCharacter
 
         'Abort animating
         If thrAnimating IsNot Nothing Then
-            If thrAnimating.IsAlive Then
-                thrAnimating.Abort()
-                blnAborted = True
-
-                'While thrAnimating.IsAlive
-                '    System.Threading.Thread.Sleep(1)
-                '    Debug.Print("CHARACTER STOPANDDISPOSE")
-                'End While
-
-                thrAnimating = Nothing
-            End If
+            'Wait
+            While thrAnimating.IsAlive
+            End While
+            'Set
+            thrAnimating = Nothing
+            'Disable timer
+            tmrAnimation.Enabled = False
+            'Stop and dispose timer
+            tmrAnimation.Stop()
+            tmrAnimation.Dispose()
+            'Remove handler
+            RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
         End If
 
     End Sub
 
     Private Sub Animating()
 
-        'Reset
-        blnAborted = False
+        'Check frame
+        Select Case intFrame
 
-        'Declare
-        Dim intLoop As Integer = 0
+            Case 1 'Standing, delay here is CHARACTER_STAND_DELAY
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(2, eintStatusMode.Stand, gbtmCharacterStand(1), gbtmCharacterStandRed(1), gbtmCharacterStandBlue(1))
 
-        'Continue
-        While blnKeepUsingAnimatingThread
-
-            'Check for first time pass shooting
-            If blnFirstTimeShootingPass Then
+            Case 2 'Standing, delay here is CHARACTER_STAND_DELAY
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
                 'Default
                 pntCharacter.X = intSpotX
-                'Set
-                blnFirstTimeShootingPass = False
+
+            Case 3 'Shooting, delay here is CHARACTER_SHOOT_DELAY
                 'Play shot sound
                 Dim udcGunShotSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\GunShot.mp3", 1000, gintSoundVolume)
-                'Change frame immediately
-                intFrame = 3
-                Select Case _strThisObjectName
-                    Case "udcCharacter"
-                        btmCharacter = gbtmCharacterShoot(0)
-                    Case "udcCharacterOne"
-                        btmCharacter = gbtmCharacterShootRed(0)
-                    Case "udcCharacterTwo"
-                        btmCharacter = gbtmCharacterShootBlue(0)
-                End Select
-            End If
-
-            'Check for first time pass reloading
-            If blnFirstTimeReloadingPass Then
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gbtmCharacterShoot(0), gbtmCharacterShootRed(0), gbtmCharacterShootBlue(0))
                 'Default
                 pntCharacter.X = intSpotX
-                'Set
-                blnFirstTimeReloadingPass = False
+
+            Case 4 'Shooting, delay here is CHARACTER_SHOOT_DELAY
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Shoot, gbtmCharacterShoot(1), gbtmCharacterShootRed(1), gbtmCharacterShootBlue(1))
+
+            Case 5
+                'Change delay
+                tmrAnimation.Interval = CHARACTER_STAND_DELAY
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
+                'Default
+                pntCharacter.X = intSpotX
+
+            Case 6 'Reloading, delay here is 100
                 'Play reloading sound
                 udcReloadingSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Reloading.mp3", 3000, gintSoundVolume)
-                'Change frame immediately
-                intFrame = 5
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gbtmCharacterReload(0), gbtmCharacterReloadRed(0), gbtmCharacterReloadBlue(0))
+                'Default
+                pntCharacter.X = intSpotX
+
+            Case 7 To 26 'Reloading, delay here is 100
+                'Set frame
+                intFrame += 1
+                'Set status mode processing
+                intStatusModeProcessing = eintStatusMode.Reload
+                'Set picture
                 Select Case _strThisObjectName
                     Case "udcCharacter"
-                        btmCharacter = gbtmCharacterReload(0)
+                        btmCharacter = gbtmCharacterReload(intFrame - 7)
                     Case "udcCharacterOne"
-                        btmCharacter = gbtmCharacterReloadRed(0)
+                        btmCharacter = gbtmCharacterReloadRed(intFrame - 7)
                     Case "udcCharacterTwo"
-                        btmCharacter = gbtmCharacterReloadBlue(0)
+                        btmCharacter = gbtmCharacterReloadBlue(intFrame - 7)
                 End Select
-            End If
 
-            'Check for first time pass running
-            If blnFirstTimeRunningPass Then
-                'Check incase level is completed
-                If blnEndOfLevel Then
-                    'Stop running
-                    IsRunning = False
-                Else
-                    'Set
-                    blnFirstTimeRunningPass = False
-                    'Change frame immediately
-                    intFrame = 26
-                    'Move point
-                    pntCharacter.X = -40
-                    'Show
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterRunning(0)
-                    End Select
+            Case 27 'Reloading, delay here is CHARACTER_RELOAD_DELAY
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Reload, gbtmCharacterReload(21), gbtmCharacterReloadRed(21), gbtmCharacterReloadBlue(21))
+                'Reset bullets
+                _intBullets = 0
+                'Reset key press event bullets
+                gintBullets = 0
+
+            Case 28
+                'Set frame, status mode processing, and picture
+                SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gbtmCharacterRunning(0))
+                'Move point
+                pntCharacter.X = -GAME_BACKGROUND_MOVING_SPEED
+                'Move game background
+                gpntGameBackground.X -= gMOVEMENTSPEED
+                'Move zombies
+                gMoveZombiesWhileRunning(gaudcZombies)
+
+            Case 29 To 44 'Running, sleep here is CHARACTER_RUN_DELAY
+                'Set frame
+                intFrame += 1
+                'Set status mode processing
+                intStatusModeProcessing = eintStatusMode.Run
+                'Set picture
+                Select Case _strThisObjectName
+                    Case "udcCharacter"
+                        btmCharacter = gbtmCharacterRunning(intFrame - 29) '30-29 = 1 in the array
+                    Case "udcCharacterOne"
+                        btmCharacter = Nothing
+                    Case "udcCharacterTwo"
+                        btmCharacter = Nothing
+                End Select
+                'Move point
+                pntCharacter.X = -GAME_BACKGROUND_MOVING_SPEED
+                'Play foot steps sound
+                Select Case intFrame
+                    Case 35, 42, 44
+                        Select Case _intLevel
+                            Case 1, 3
+                                Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
+                            Case 2, 4
+                                If intFrame = 35 Or intFrame = 44 Then
+                                    Dim udcWaterFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                  "Sounds\WaterFootStepLeft.mp3", 1000, gintSoundVolume)
+                                Else
+                                    Dim udcWaterFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                   "Sounds\WaterFootStepRight.mp3", 1000, gintSoundVolume)
+                                End If
+                            Case 5
+                                If intFrame = 35 Or intFrame = 44 Then
+                                    Dim udcGravelFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                   "Sounds\GravelFootStepLeft.mp3", 2000, gintSoundVolume)
+                                Else
+                                    Dim udcGravelFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
+                                                                                    "Sounds\GravelFootStepRight.mp3", 1000, gintSoundVolume)
+                                End If
+                        End Select
+                End Select
+                'Move game background
+                gpntGameBackground.X -= gMOVEMENTSPEED
+                'Move zombies
+                gMoveZombiesWhileRunning(gaudcZombies)
+                'Check if stop running
+                If intFrame = 45 Then
+                    intFrame = 5
                 End If
-            End If
 
-            'Sleep
-            System.Threading.Thread.Sleep(_intAnimatingDelay)
-
-            'Check frame
-            Select Case intFrame
-
-                Case 1 'Standing, sleep here is 3000
-                    'Set frame
-                    intFrame = 2
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterStand(1)
-                        Case "udcCharacterOne"
-                            btmCharacter = gbtmCharacterStandRed(1)
-                        Case "udcCharacterTwo"
-                            btmCharacter = gbtmCharacterStandBlue(1)
-                    End Select
-
-                Case 2
-                    'Set frame
-                    intFrame = 1
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterStand(0)
-                        Case "udcCharacterOne"
-                            btmCharacter = gbtmCharacterStandRed(0)
-                        Case "udcCharacterTwo"
-                            btmCharacter = gbtmCharacterStandBlue(0)
-                    End Select
-
-                Case 3 'Shooting, sleep here is 250
-                    'Set frame
-                    intFrame = 4
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterShoot(1)
-                        Case "udcCharacterOne"
-                            btmCharacter = gbtmCharacterShootRed(1)
-                        Case "udcCharacterTwo"
-                            btmCharacter = gbtmCharacterShootBlue(1)
-                    End Select
-
-                Case 4 'Neutral to get back to standing
-                    'Check for running
-                    If blnPrepareToRun Then
-                        'Set
-                        blnIsRunning = True
-                        'Set
-                        _intAnimatingDelay = 80
-                        'Set
-                        blnPrepareToRun = False
-                        'Change frame immediately
-                        intFrame = 26
-                        'Move point
-                        pntCharacter.X = -40
-                        'Show
-                        Select Case _strThisObjectName
-                            Case "udcCharacter"
-                                btmCharacter = gbtmCharacterRunning(0)
-                        End Select
-                    Else
-                        'Reset if running
-                        blnIsRunning = False
-                        pntCharacter.X = intSpotX
-                        'Check if needs to reload first
-                        If blnNeedsToShowReloading Then
-                            'Send data
-                            SendData()
-                            'Set
-                            blnIsShooting = False
-                            blnIsReloading = True
-                            'Set
-                            blnNeedsToShowReloading = False
-                            'Set
-                            _intAnimatingDelay = 100
-                            'Play reloading sound
-                            udcReloadingSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Reloading.mp3", 3000, gintSoundVolume)
-                            'Change frame immediately
-                            intFrame = 5
-                            Select Case _strThisObjectName
-                                Case "udcCharacter"
-                                    btmCharacter = gbtmCharacterReload(0)
-                                Case "udcCharacterOne"
-                                    btmCharacter = gbtmCharacterReloadRed(0)
-                                Case "udcCharacterTwo"
-                                    btmCharacter = gbtmCharacterReloadBlue(0)
-                            End Select
-                            'Increase
-                            intReloadTimes += 1
-                        Else
-                            'Standing
-                            StandingFrame()
-                        End If
-                    End If
-
-                Case 5 To 24 'Reloading, sleep here is 100
-                    'Set frame
-                    intFrame += 1
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterReload(intFrame - 5)
-                        Case "udcCharacterOne"
-                            btmCharacter = gbtmCharacterReloadRed(intFrame - 5)
-                        Case "udcCharacterTwo"
-                            btmCharacter = gbtmCharacterReloadBlue(intFrame - 5)
-                    End Select
-
-                Case 25
-                    'Set frame
-                    intFrame = 4 'Goes back to neutral standing
-                    Select Case _strThisObjectName
-                        Case "udcCharacter"
-                            btmCharacter = gbtmCharacterReload(21)
-                        Case "udcCharacterOne"
-                            btmCharacter = gbtmCharacterReloadRed(21)
-                        Case "udcCharacterTwo"
-                            btmCharacter = gbtmCharacterReloadBlue(21)
-                    End Select
-                    'Set
-                    blnIsReloading = False
-                    'Reset bullets
-                    _intBullets = 0
-
-                Case 26 To 41
-                    'Check if end of level
-                    If blnEndOfLevel Then
-                        'Stop running
-                        IsRunning = False
-                    Else
-                        'Set frame
-                        intFrame += 1
-                        'Move point
-                        pntCharacter.X = -40
-                        Select Case _strThisObjectName
-                            Case "udcCharacter"
-                                btmCharacter = gbtmCharacterRunning(intFrame - 26) '27 - 26 = 1 in the array
-                        End Select
-                        'Play foot steps sound
-                        Select Case intFrame
-                            Case 32, 39, 41
-                                Select Case _intLevel
-                                    Case 1
-                                        Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
-                                    Case 2
-                                        If intFrame = 32 Or intFrame = 41 Then
-                                            Dim udcWaterFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                          "Sounds\WaterFootStepLeft.mp3", 1000, gintSoundVolume)
-                                        Else
-                                            Dim udcWaterFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                           "Sounds\WaterFootStepRight.mp3", 1000, gintSoundVolume)
-                                        End If
-                                    Case 3
-                                        If intFrame = 32 Or intFrame = 41 Then
-                                            Dim udcGravelFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                           "Sounds\GravelFootStepLeft.mp3", 2000, gintSoundVolume)
-                                        Else
-                                            Dim udcGravelFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                            "Sounds\GravelFootStepRight.mp3", 1000, gintSoundVolume)
-                                        End If
-                                End Select
-                        End Select
-                        'Check if stop running
-                        If intFrame = 42 Then
-                            intFrame = 4
-                        End If
-                    End If
-
-            End Select
-
-        End While
-
-    End Sub
-
-    Private Sub StandingFrame()
-
-        'Change sleep
-        _intAnimatingDelay = 3000
-
-        'Set
-        blnIsShooting = False
-        blnIsReloading = False
-
-        'Set frame
-        intFrame = 1
-
-        'Set
-        Select Case _strThisObjectName
-            Case "udcCharacter"
-                btmCharacter = gbtmCharacterStand(0)
-            Case "udcCharacterOne"
-                btmCharacter = gbtmCharacterStandRed(0)
-            Case "udcCharacterTwo"
-                btmCharacter = gbtmCharacterStandBlue(0)
         End Select
 
+        'Enable timer
+        tmrAnimation.Enabled = True
+
     End Sub
 
-    Private Sub SendData()
+    Public Sub Shoot()
+
+        'Disable timer, set frame, and set status modes
+        DisableTimerSetFrameAndStatusModes(3, eintStatusMode.Shoot)
+
+        'Check if not imitation
+        If Not _blnImitation Then
+            'Increase bullet
+            _intBullets += 1
+            'Check if wasted all ammo
+            If _intBullets = 30 Then
+                'Send data if
+                If _strThisObjectName <> "udcCharacter" Then
+                    PrepareSendData = True
+                End If
+            End If
+        End If
+
+        'Restart thread
+        Start(CHARACTER_SHOOT_DELAY)
+
+    End Sub
+
+    Private Sub DisableTimerSetFrameAndStatusModes(intFrameToBe As Integer, intStatusModeProcessingToBe As eintStatusMode)
+
+        'Disable timer
+        tmrAnimation.Enabled = False
+
+        'Set to default
+        intStatusModeStartToDo = eintStatusMode.Stand
+
+        'Set enumeration
+        intStatusModeProcessing = intStatusModeProcessingToBe
+
+        'Set
+        intFrame = intFrameToBe
+
+    End Sub
+
+    Public Sub Reload()
+
+        'Disable timer, set frame, and set status modes
+        DisableTimerSetFrameAndStatusModes(6, eintStatusMode.Reload)
 
         'Send data
         If blnSendData Then
@@ -415,68 +362,98 @@ Public Class clsCharacter
             blnSendData = False
         End If
 
-    End Sub
+        'Increase
+        intReloadTimes += 1
 
-    Public Sub Shot()
-
-        'Check for instance
-        If thrAnimating IsNot Nothing Then
-            'Set
-            blnIsRunning = False
-            'Check if not imitation
-            If Not _blnImitation Then
-                'Increase bullet
-                _intBullets += 1
-                'Check if wasted all ammo
-                If _intBullets = 30 Then
-                    'Send data if
-                    If _strThisObjectName <> "udcCharacter" Then
-                        PrepareSendData = True
-                    End If
-                    blnNeedsToShowReloading = True
-                End If
-            End If
-            'Abort thread
-            thrAnimating.Abort()
-            blnAborted = True
-            'Set
-            blnIsShooting = True
-            'Set
-            blnFirstTimeShootingPass = True
-            'Restart thread
-            Start(250)
-        End If
+        'Restart thread
+        Start(CHARACTER_RELOAD_DELAY)
 
     End Sub
 
-    Public Sub Reload()
+    Public Sub Stand()
 
-        'Check if shooting
-        If blnIsShooting Then
-            'Set
-            blnNeedsToShowReloading = True
-        Else
-            'Set
-            blnIsRunning = False
-            'Check for instance
-            If thrAnimating IsNot Nothing Then
-                'Send data
-                SendData()
-                'Abort thread
-                thrAnimating.Abort()
-                blnAborted = True
-                'Set
-                blnIsReloading = True
-                'Set
-                blnFirstTimeReloadingPass = True
-                'Increase
-                intReloadTimes += 1
-                'Restart thread
-                Start(100)
-            End If
-        End If
+        'Disable timer, set frame, and set status modes
+        DisableTimerSetFrameAndStatusModes(2, eintStatusMode.Stand)
+
+        'Restart thread
+        Start() 'Default CHARACTER_STAND_DELAY
 
     End Sub
+
+    Public Sub Run()
+
+        'Disable timer, set frame, and set status modes
+        DisableTimerSetFrameAndStatusModes(28, eintStatusMode.Run)
+
+        'Restart thread
+        Start(CHARACTER_RUN_DELAY)
+
+    End Sub
+
+    Public Property StatusModeStartToDo() As eintStatusMode
+
+        'Return
+        Get
+            Return intStatusModeStartToDo
+        End Get
+
+        'Set
+        Set(value As eintStatusMode)
+            intStatusModeStartToDo = value
+        End Set
+
+    End Property
+
+    Public Property StatusModeProcessing() As eintStatusMode
+
+        'Return
+        Get
+            Return intStatusModeProcessing
+        End Get
+
+        'Set
+        Set(value As eintStatusMode)
+            intStatusModeProcessing = value
+        End Set
+
+    End Property
+
+    Public Property StatusModeAboutToDo() As eintStatusMode
+
+        'Return
+        Get
+            Return intStatusModeAboutToDo
+        End Get
+
+        'Set
+        Set(value As eintStatusMode)
+            intStatusModeAboutToDo = value
+        End Set
+
+    End Property
+
+    Public Property StopCharacterFromRunning As Boolean
+
+        'Return
+        Get
+            Return blnStopCharacterFromRunning
+        End Get
+
+        'Set
+        Set(value As Boolean)
+            blnStopCharacterFromRunning = value
+        End Set
+
+    End Property
+
+    Public ReadOnly Property GetPictureFrame() As Integer
+
+        'Return
+        Get
+            Return intFrame
+        End Get
+
+    End Property
 
     Public ReadOnly Property BulletsUsed() As Integer
 
@@ -496,92 +473,6 @@ Public Class clsCharacter
 
     End Property
 
-    Public ReadOnly Property IsReloading() As Boolean
-
-        'Return
-        Get
-            Return blnIsReloading
-        End Get
-
-    End Property
-
-    Public ReadOnly Property IsShooting() As Boolean
-
-        'Return
-        Get
-            Return blnIsShooting
-        End Get
-
-    End Property
-
-    Public Property IsRunning() As Boolean
-
-        'Return
-        Get
-            Return blnIsRunning
-        End Get
-
-        'Set
-        Set(value As Boolean)
-
-            'Set
-            blnIsRunning = value
-
-            'Check
-            If Not value Then
-                'Check for instance
-                If thrAnimating IsNot Nothing Then
-                    'Abort
-                    While thrAnimating.IsAlive
-                        If Not blnAborted Then
-                            thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
-                            blnAborted = True
-                        End If
-                    End While
-                    'Set
-                    pntCharacter.X = intSpotX
-                    'Stand
-                    StandingFrame()
-                    'Start
-                    Start()
-                End If
-            End If
-
-        End Set
-
-    End Property
-
-    Public Property EndOfLevel() As Boolean
-
-        'Return
-        Get
-            Return blnEndOfLevel
-        End Get
-
-        'Set
-        Set(value As Boolean)
-
-            'Set
-            blnEndOfLevel = value
-
-            'Check if ending level
-            If value Then
-                blnKeepUsingAnimatingThread = False
-            End If
-
-        End Set
-
-    End Property
-
-    Public WriteOnly Property PrepareToRun() As Boolean
-
-        'Return
-        Set(value As Boolean)
-            blnPrepareToRun = value
-        End Set
-
-    End Property
-
     Public WriteOnly Property PrepareSendData() As Boolean
 
         'Set
@@ -596,27 +487,7 @@ Public Class clsCharacter
         'Stop sound
         If udcReloadingSound IsNot Nothing Then
             udcReloadingSound.StopAndCloseSound()
-        End If
-
-    End Sub
-
-    Public Sub Running()
-
-        'Check for instance
-        If thrAnimating IsNot Nothing Then
-            'Abort
-            While thrAnimating.IsAlive
-                If Not blnAborted Then
-                    thrAnimating.Abort() 'If a thread is trying to abort multiple times at the exact same time, it does affect processor speed, and creates crazy glitches
-                    blnAborted = True
-                End If
-            End While
-            'Set
-            blnIsRunning = True
-            'Set
-            blnFirstTimeRunningPass = True
-            'Restart thread
-            Start(80)
+            udcReloadingSound = Nothing
         End If
 
     End Sub

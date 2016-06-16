@@ -12,7 +12,6 @@ Public Class clsSound
     Private intCounter As Integer = 0 'Used for alias
     Private intReturn As Integer = 0 'Check for errors
     Private strAlias As String = ""
-    Private strRepeat As String = ""
 
     'Declare function
     Private Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrReturnString As String,
@@ -43,32 +42,15 @@ Public Class clsSound
 
         'Check if repeating
         If blnRepeat Then
-            'Set
-            strRepeat = " repeat"
-            'Prevent error
-            Try
-                'Open file
-                _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
-                'Play file
-                _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias & strRepeat, "", 0, 0))
-            Catch ex As Exception
-                'No debug
-            End Try
+            'Play sound repeating
+            PlaySound(intVolume, True)
         Else
             'Set
             thrCloseFile = New System.Threading.Thread(New System.Threading.ThreadStart(Sub() ClosingFile(intLengthOfFile)))
             thrCloseFile.Start()
             'Play sound
-            PlaySound()
+            PlaySound(intVolume)
         End If
-
-        'Prevent error
-        Try
-            'Check for volume
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0))
-        Catch ex As Exception
-            'No debug
-        End Try
 
     End Sub
 
@@ -99,18 +81,32 @@ Public Class clsSound
 
     End Function
 
-    Private Sub PlaySound()
+    Private Sub PlaySound(intVolume As Integer, Optional blnRepeat As Boolean = False)
 
         'Notes: Must have a form because MCI uses a thread and needs an invoke, otherwise no sound
 
-        'Prevent error
-        Try
-            'Open file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
-            'Play file
+        'Open file
+        _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
+
+        'Set volume and alias
+        _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0))
+
+        'Play file
+        If blnRepeat Then
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias & " repeat", "", 0, 0))
+        Else
             _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias, "", 0, 0))
+        End If
+
+    End Sub
+
+    Public Sub ChangeVolumeWhileSoundIsPlaying()
+
+        'Set volume and alias
+        Try
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(gintSoundVolume), "", 0, 0))
         Catch ex As Exception
-            'No debug
+            'No Debug
         End Try
 
     End Sub
