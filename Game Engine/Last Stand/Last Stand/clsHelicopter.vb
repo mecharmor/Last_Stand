@@ -5,12 +5,18 @@ Option Infer Off
 
 Public Class clsHelicopter
 
+    'Constant
+    Private Const HELICOPTER_ROTATINGBLADE_DELAY As Integer = 120
+
     'Declare
     Private _frmToPass As Form
     Private intFrame As Integer = 1
 
-    'For error preventing
-    Private blnKeepUsingAnimatingThread As Boolean = True
+    'Sound
+    Private _udcRotatingBladeSound As clsSound
+
+    'Ending thread
+    Private blnThreadDisposing As Boolean = False
 
     'Bitmaps
     Private btmHelicopter As Bitmap
@@ -18,12 +24,11 @@ Public Class clsHelicopter
 
     'Thread
     Private thrAnimating As System.Threading.Thread
-    Private _intAnimatingDelay As Integer = 0
 
-    'Blade sound
-    Private udcRotatingBladeSound As clsSound
+    'Timer
+    Private tmrAnimation As New System.Timers.Timer()
 
-    Public Sub New(frmToPass As Form, Optional blnStartAnimation As Boolean = False)
+    Public Sub New(frmToPass As Form, udcRotatingBladeSound As clsSound, Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
@@ -34,6 +39,18 @@ Public Class clsHelicopter
         'Set
         pntHelicopter = New Point(2879, 0)
 
+        'Set sound
+        _udcRotatingBladeSound = udcRotatingBladeSound
+
+        'Start the sound in a loop
+        _udcRotatingBladeSound.PlaySound(gintSoundVolume, True)
+
+        'Set timer
+        tmrAnimation.AutoReset = True
+
+        'Add handlers
+        AddHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
+
         'Start
         If blnStartAnimation Then
             Start()
@@ -41,49 +58,85 @@ Public Class clsHelicopter
 
     End Sub
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = 100)
+    Private Sub ElapsedAnimation(sender As Object, e As EventArgs)
 
-        'Set
-        _intAnimatingDelay = intAnimatingDelay
+        'Disable timer
+        tmrAnimation.Enabled = False
 
         'Start thread
+        If Not blnThreadDisposing Then
+            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+            thrAnimating.Start()
+        End If
+
+    End Sub
+
+
+    Public Sub Start(Optional intAnimatingDelay As Integer = HELICOPTER_ROTATINGBLADE_DELAY)
+
+        'Set timer delay
+        tmrAnimation.Interval = CDbl(intAnimatingDelay)
+
+        'Start the animating thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
         thrAnimating.Start()
-
-        'Start rotating blade sound
-        udcRotatingBladeSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\RotatingBlade.mp3", 98000, gintSoundVolume)
 
     End Sub
 
     Public Sub StopAndDispose()
 
+        'Set
+        blnThreadDisposing = True
+
+        'Disable timers
+        tmrAnimation.Enabled = False
+
+        'Stop and dispose timers
+        tmrAnimation.Stop()
+        tmrAnimation.Dispose()
+
+        'Remove handlers
+        RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
+
         'Abort animating
         If thrAnimating IsNot Nothing Then
-            If thrAnimating.IsAlive Then
-                thrAnimating.Abort()
-                thrAnimating = Nothing
-            End If
+            'Wait
+            While thrAnimating.IsAlive
+            End While
+            'Set
+            thrAnimating = Nothing
         End If
 
     End Sub
 
-    Public WriteOnly Property KeepUsingAnimatingThread() As Boolean
+    Private Sub Animating()
 
-        'Set
-        Set(value As Boolean)
-            blnKeepUsingAnimatingThread = value
-        End Set
+        'Check the frame
+        Select Case intFrame
+            Case 1
+                btmHelicopter = gbtmHelicopter(1)
+            Case 2
+                btmHelicopter = gbtmHelicopter(2)
+            Case 3
+                btmHelicopter = gbtmHelicopter(3)
+            Case 4
+                btmHelicopter = gbtmHelicopter(4)
+            Case 5
+                btmHelicopter = gbtmHelicopter(0)
+        End Select
 
-    End Property
+        'Increase frame
+        intFrame += 1
+        If intFrame = 6 Then
+            intFrame = 1
+        End If
 
-    Public WriteOnly Property RotationDelaySpeed() As Integer
+        'Enable timer, unless need to dispose
+        If Not blnThreadDisposing Then
+            tmrAnimation.Enabled = True
+        End If
 
-        'Set
-        Set(value As Integer)
-            _intAnimatingDelay = value
-        End Set
-
-    End Property
+    End Sub
 
     Public Property HelicopterPoint() As Point
 
@@ -107,46 +160,5 @@ Public Class clsHelicopter
         End Get
 
     End Property
-
-    Public Sub StopRotatingBladeSound()
-
-        'Stop sound
-        If udcRotatingBladeSound IsNot Nothing Then
-            udcRotatingBladeSound.StopAndCloseSound()
-        End If
-
-    End Sub
-
-    Private Sub Animating()
-
-        'Continue
-        While blnKeepUsingAnimatingThread
-
-            'Check the frame
-            Select Case intFrame
-                Case 1
-                    btmHelicopter = gbtmHelicopter(1)
-                Case 2
-                    btmHelicopter = gbtmHelicopter(2)
-                Case 3
-                    btmHelicopter = gbtmHelicopter(3)
-                Case 4
-                    btmHelicopter = gbtmHelicopter(4)
-                Case 5
-                    btmHelicopter = gbtmHelicopter(0)
-            End Select
-
-            'Increase frame
-            intFrame += 1
-            If intFrame = 6 Then
-                intFrame = 1
-            End If
-
-            'Sleep
-            System.Threading.Thread.Sleep(_intAnimatingDelay)
-
-        End While
-
-    End Sub
 
 End Class

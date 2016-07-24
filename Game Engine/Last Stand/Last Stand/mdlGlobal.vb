@@ -6,7 +6,7 @@ Option Infer Off
 Module mdlGlobal
 
     'Gameplay speed
-    Public Const gMOVEMENTSPEED As Integer = 40
+    Public Const gCHARACTER_MOVEMENT_SPEED As Integer = 55
 
     'Screen width ratio
     Public gdblScreenWidthRatio As Double = 0
@@ -85,7 +85,7 @@ Module mdlGlobal
             If audcZombiesType(intLoop).Spawned Then
                 'Check if not marked to die
                 If Not audcZombiesType(intLoop).MarkedToDie Then
-                    audcZombiesType(intLoop).ZombiePoint = New Point(audcZombiesType(intLoop).ZombiePoint.X - gMOVEMENTSPEED,
+                    audcZombiesType(intLoop).ZombiePoint = New Point(audcZombiesType(intLoop).ZombiePoint.X - gCHARACTER_MOVEMENT_SPEED,
                                                            audcZombiesType(intLoop).ZombiePoint.Y)
                 End If
             End If

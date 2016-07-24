@@ -5,137 +5,157 @@ Option Infer Off
 
 Public Class clsSound
 
-    'Declares
-    Private _strDirectory As String = ""
-    Private _frmToPass As Form
-    Private thrCloseFile As System.Threading.Thread
-    Private intCounter As Integer = 0 'Used for alias
-    Private intReturn As Integer = 0 'Check for errors
-    Private strAlias As String = ""
-
     'Declare function
     Private Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrReturnString As String,
                                                                                    ByVal uReturnLength As Integer, ByVal hwndCallback As Integer) As Integer
 
-    Public Sub New(frmToPass As Form, strDirectory As String, intLengthOfFile As Integer, intVolume As Integer, Optional blnRepeat As Boolean = False)
+    'Declare
+    Private _frmToPass As Form
+    Private _strAlias As String = ""
+    Private intReturn As Integer = 0
+    Private _intNumberOfSounds As Integer = 0
 
-        'Notes: Must pass a form and length of file, the length is the duration time, make sure to pass more than necessary, example: 00:02 seconds pass 3000 instead of 2000
+    'Notes: This class needs invokes because of delegation within threads. MCISendString seems to run in a thread and won't work without invoke when in another thread.
 
-        'Set
-        intCounter = gintAlias + 1
+    Public Sub New(frmToPass As Form, strDirectory As String, intNumberOfSounds As Integer)
 
-        'Increase counter or start it over
-        If gintAlias + 1 = Integer.MaxValue Then
-            gintAlias = 0
-        Else
-            gintAlias += 1
-        End If
+        'Notes: Number of sounds will be 1 for repeating sounds. Sounds that must be continuously heard and new ones played, must use more than 1 and will not repeat.
 
         'Set
         _frmToPass = frmToPass
 
         'Set
-        _strDirectory = strDirectory
+        _strAlias = strGetAlias(strDirectory)
 
-        'Get alias
-        strAlias = strGetAlias()
+        'Increase counter
+        gintAlias += 1
 
-        'Check if repeating
-        If blnRepeat Then
-            'Play sound repeating
-            PlaySound(intVolume, True)
-        Else
+        'Set
+        _intNumberOfSounds = intNumberOfSounds
+
+        'Declare
+        Dim intIndex As Integer = 0 'Lambda reason
+
+        'Open all sounds
+        For intLoop As Integer = 0 To _intNumberOfSounds - 1
             'Set
-            thrCloseFile = New System.Threading.Thread(New System.Threading.ThreadStart(Sub() ClosingFile(intLengthOfFile)))
-            thrCloseFile.Start()
-            'Play sound
-            PlaySound(intVolume)
-        End If
+            intIndex = intLoop
+            'Open individual
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & strDirectory & ControlChars.Quote & " alias " & _strAlias &
+                              CStr(intIndex), "", 0, 0))
+        Next
 
     End Sub
 
     Public Sub StopAndCloseSound()
 
-        'Prevent error
-        Try
-            'Stop file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & strAlias, "", 0, 0))
-            'Close file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("close " & strAlias, "", 0, 0))
-        Catch ex As Exception
-            'No debug
-        End Try
+        'Declare
+        Dim intIndex As Integer = 0 'Lambda reason
+
+        'Stop and close all sounds
+        For intLoop As Integer = 0 To _intNumberOfSounds - 1
+            'Set
+            intIndex = intLoop
+            'Stop
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & _strAlias & CStr(intIndex), "", 0, 0))
+            'Close
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("close " & _strAlias & CStr(intIndex), "", 0, 0))
+        Next
 
     End Sub
 
-    Private Function strGetAlias() As String
+    Private Function strGetAlias(strDirectory As String) As String
 
-        'Notes: Looks like "X:\folder\folder\folder\file.mp3"
+        'Notes: Looks like "X:\folder\folder\folder\filename.mp3"
 
         'Declare
-        Dim astrTemp1() As String = Split(_strDirectory, "\")
+        Dim astrTemp1() As String = Split(strDirectory, "\")
         Dim astrTemp2() As String = Split(astrTemp1(astrTemp1.GetUpperBound(0)), ".")
 
         'Return
-        Return astrTemp2(0) & CStr(intCounter)
+        Return astrTemp2(0) & "_" & CStr(gintAlias) & "_" 'Looks like "filename_i_" as end result with mciSendString
 
     End Function
 
-    Private Sub PlaySound(intVolume As Integer, Optional blnRepeat As Boolean = False)
+    Public Sub ChangeVolumeWhileSoundIsPlaying()
 
-        'Notes: Must have a form because MCI uses a thread and needs an invoke, otherwise no sound
+        'Set volume
+        _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & _strAlias & CStr(_intNumberOfSounds - 1) & " volume to " & CStr(gintSoundVolume), "", 0, 0))
 
-        'Open file
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("open " & ControlChars.Quote & _strDirectory & ControlChars.Quote & " alias " & strAlias, "", 0, 0))
+    End Sub
 
-        'Set volume and alias
-        _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(intVolume), "", 0, 0))
+    Public Sub PlaySound(intVolume As Integer, Optional blnRepeat As Boolean = False)
 
-        'Play file
+        'Check if repeating sound or not
         If blnRepeat Then
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias & " repeat", "", 0, 0))
+
+            'Set volume
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & _strAlias & CStr(_intNumberOfSounds - 1) & " volume to " & CStr(intVolume), "", 0, 0))
+
+            'Seek
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("seek " & _strAlias & CStr(_intNumberOfSounds - 1) & " to start", "", 0, 0))
+
+            'Repeating sound
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & _strAlias & CStr(_intNumberOfSounds - 1) & " repeat", "", 0, 0))
+
         Else
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & strAlias, "", 0, 0))
+
+            'Declare
+            Dim intIndex As Integer = 0 'Lambda reason
+
+            'Loop to play sound
+            For intLoop As Integer = 0 To _intNumberOfSounds - 1
+                'Check if sound is not playing
+                If Not SoundIsPlaying(intLoop) Then
+                    'Set
+                    intIndex = intLoop
+                    'Set volume
+                    _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & _strAlias & CStr(intIndex) & " volume to " & CStr(intVolume), "", 0, 0))
+                    'Seek
+                    _frmToPass.Invoke(Sub() intReturn = mciSendString("seek " & _strAlias & CStr(intIndex) & " to start", "", 0, 0))
+                    'Play
+                    _frmToPass.Invoke(Sub() intReturn = mciSendString("play " & _strAlias & CStr(intIndex), "", 0, 0))
+                    'Exit
+                    Exit For
+                End If
+            Next
+
         End If
 
     End Sub
 
-    Public Sub ChangeVolumeWhileSoundIsPlaying()
-
-        'Set volume and alias
-        Try
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("setaudio " & strAlias & " volume to " & CStr(gintSoundVolume), "", 0, 0))
-        Catch ex As Exception
-            'No Debug
-        End Try
-
-    End Sub
-
-    Private Sub ClosingFile(intLengthOfFile As Integer)
-
-        'Notes: Must have a form because MCI uses a thread and needs an invoke, otherwise no sound
+    Private Function SoundIsPlaying(intIndex As Integer) As Boolean
 
         'Declare
-        Dim intWait As Integer = 0
+        Dim strReturn As String = Space(128) 'Buffered string, has to be used this way
 
-        'Sleep, but count so program can be safely exited immediately
-        While intWait <> intLengthOfFile
-            System.Threading.Thread.Sleep(1)
-            intWait += 1
-            If Not _frmToPass.IsHandleCreated Then
-                Exit While
-            End If
-        End While
+        'Check sound status
+        _frmToPass.Invoke(Sub() intReturn = mciSendString("status " & _strAlias & CStr(intIndex) & " mode", strReturn, 128, 0))
 
-        'Prevent errors
-        Try
-            'Stop file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & strAlias, "", 0, 0))
-            'Close file
-            _frmToPass.Invoke(Sub() intReturn = mciSendString("close " & strAlias, "", 0, 0))
-        Catch ex As Exception
-            'No debug
-        End Try
+        'Fix the buffered string into a regular string
+        strReturn = Replace(strReturn, Chr(0), "").Trim
+
+        'Return
+        If strReturn = "stopped" Then
+            Return False
+        Else
+            Return True
+        End If
+
+    End Function
+
+    Public Sub StopSound()
+
+        'Declare
+        Dim intIndex As Integer = 0 'Lambda reason
+
+        'Stop all sounds
+        For intLoop As Integer = 0 To _intNumberOfSounds - 1
+            'Set
+            intIndex = intLoop
+            'Stop
+            _frmToPass.Invoke(Sub() intReturn = mciSendString("stop " & _strAlias & CStr(intIndex), "", 0, 0))
+        Next
 
     End Sub
 

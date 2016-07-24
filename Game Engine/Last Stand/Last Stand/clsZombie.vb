@@ -20,6 +20,15 @@ Public Class clsZombie
     Private _strThisObjectNameCorrespondingToCharacter As String = ""
     Private _blnSpawned As Boolean = False
 
+    'Sound
+    Private _audcZombieDeathSound() As clsSound
+
+    'Ending thread
+    Private blnThreadDisposing As Boolean = False
+
+    'Avoid timer
+    Private blnAvoidTimer As Boolean = False
+
     'Bitmaps
     Private btmZombie As Bitmap
     Private pntZombie As Point
@@ -43,7 +52,7 @@ Public Class clsZombie
     Private tmrAnimation As New System.Timers.Timer()
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
-                   Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
+                   audcZombieDeathSound() As clsSound, Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
@@ -56,6 +65,9 @@ Public Class clsZombie
 
         'Set
         _blnSpawned = blnSpawn
+
+        'Set sound
+        _audcZombieDeathSound = audcZombieDeathSound
 
         'Set animation
         Select Case _strThisObjectNameCorrespondingToCharacter
@@ -91,8 +103,10 @@ Public Class clsZombie
         tmrAnimation.Enabled = False
 
         'Start thread
-        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-        thrAnimating.Start()
+        If Not blnAvoidTimer And Not blnThreadDisposing Then
+            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+            thrAnimating.Start()
+        End If
 
     End Sub
 
@@ -121,7 +135,7 @@ Public Class clsZombie
         'Set
         _blnSpawned = blnSpawn
 
-        'Start thread
+        'Start the animating thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
         thrAnimating.Start()
 
@@ -166,6 +180,19 @@ Public Class clsZombie
 
     Public Sub StopAndDispose()
 
+        'Set
+        blnThreadDisposing = True
+
+        'Disable timer
+        tmrAnimation.Enabled = False
+
+        'Stop and dispose timer
+        tmrAnimation.Stop()
+        tmrAnimation.Dispose()
+
+        'Remove handler
+        RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
+
         'Abort animating
         If thrAnimating IsNot Nothing Then
             'Wait
@@ -173,13 +200,6 @@ Public Class clsZombie
             End While
             'Set
             thrAnimating = Nothing
-            'Disable timer
-            tmrAnimation.Enabled = False
-            'Stop and dispose timer
-            tmrAnimation.Stop()
-            tmrAnimation.Dispose()
-            'Remove handler
-            RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
         End If
 
     End Sub
@@ -223,29 +243,26 @@ Public Class clsZombie
             Case 7 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Declare
                 Dim rndNumber As New Random
-                'Play sound of death
-                Dim udcDeathSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "/Sounds/ZombieDeath" & CStr(rndNumber.Next(1, 4)) &
-                                                  ".mp3", 2000, gintSoundVolume)
                 'Set frame death
                 intFrameDeath = rndNumber.Next(1, 3)
                 'Set frame, frame death, and picture
-                SetFrameFrameDeathAndPicture(8, rndNumber.Next(1, 3), 0)
+                SetFrameAndDeathPicture(8, 0)
 
             Case 8 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set frame, frame death, and picture
-                SetFrameFrameDeathAndPicture(9, intFrameDeath, 1)
+                SetFrameAndDeathPicture(9, 1)
 
             Case 9 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set frame, frame death, and picture
-                SetFrameFrameDeathAndPicture(10, intFrameDeath, 2)
+                SetFrameAndDeathPicture(10, 2)
 
             Case 10 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set frame, frame death, and picture
-                SetFrameFrameDeathAndPicture(11, intFrameDeath, 3)
+                SetFrameAndDeathPicture(11, 3)
 
             Case 11 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set frame, frame death, and picture
-                SetFrameFrameDeathAndPicture(12, intFrameDeath, 4)
+                SetFrameAndDeathPicture(12, 4)
 
             Case 12 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set picture
@@ -263,20 +280,17 @@ Public Class clsZombie
 
         End Select
 
-        'Enable timer, unless dead
-        If Not blnDead Then
+        'Enable timer, unless dead, need to avoid, or dispose
+        If Not blnDead And Not blnAvoidTimer And Not blnThreadDisposing Then
             tmrAnimation.Enabled = True
         End If
 
     End Sub
 
-    Private Sub SetFrameFrameDeathAndPicture(intFrameToBe As Integer, intFrameDeathToBe As Integer, intZombieDeathIndex As Integer)
+    Private Sub SetFrameAndDeathPicture(intFrameToBe As Integer, intZombieDeathIndex As Integer)
 
         'Set frame
         intFrame = intFrameToBe
-
-        'Set frame death type
-        intFrameDeath = intFrameDeathToBe
 
         'Set picture by death type
         SetDeathTypePicture(intZombieDeathIndex)
@@ -385,21 +399,40 @@ Public Class clsZombie
         'Set
         blnIsDying = True
 
-        'Disable timer and set frame
-        DisableTimerAndSetFrame(7)
+        'Sync to the new frame
+        SyncToNewFrame(7)
 
         'Restart thread
         Start(ZOMBIE_DYING_DELAY)
 
+        'Declare
+        Dim rndNumber As New Random
+
+        'Play zombie death sound
+        _audcZombieDeathSound(rndNumber.Next(0, 2)).PlaySound(gintSoundVolume)
+
     End Sub
 
-    Private Sub DisableTimerAndSetFrame(intFrameToBe As Integer)
+    Private Sub SyncToNewFrame(intFrameToBe As Integer)
+
+        'Set
+        blnAvoidTimer = False
+
+        'Wait
+        While thrAnimating.IsAlive
+        End While
+
+        'Set
+        blnAvoidTimer = True
 
         'Disable timer
         tmrAnimation.Enabled = False
 
         'Set
         intFrame = intFrameToBe
+
+        'Reset
+        blnAvoidTimer = False
 
     End Sub
 
@@ -408,8 +441,8 @@ Public Class clsZombie
         'Set
         blnIsPinning = True
 
-        'Disable timer and set frame
-        DisableTimerAndSetFrame(13)
+        'Sync to the new frame
+        SyncToNewFrame(13)
 
         'Restart thread
         Start(ZOMBIE_PINNING_DELAY)

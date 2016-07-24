@@ -9,8 +9,8 @@ Public Class clsCharacter
     Private Const CHARACTER_STAND_DELAY As Integer = 3000
     Private Const CHARACTER_SHOOT_DELAY As Integer = 175
     Private Const CHARACTER_RELOAD_DELAY As Integer = 85
-    Private Const CHARACTER_RUN_DELAY As Integer = 65
-    Private Const GAME_BACKGROUND_MOVING_SPEED As Integer = 60
+    Private Const CHARACTER_RUN_DELAY As Integer = 60
+    Private Const CHARACTER_RESET_POINT As Integer = 60
 
     'Status mode
     Public Enum eintStatusMode As Integer
@@ -35,6 +35,21 @@ Public Class clsCharacter
     Private _intLevel As Integer = 1 'Starting level
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
 
+    'Sounds
+    Private _udcGunShotSound As clsSound
+    Private _udcReloadingSound As clsSound
+    Private _udcStepSound As clsSound
+    Private _udcWaterFootStepLeftSound As clsSound
+    Private _udcWaterFootStepRightSound As clsSound
+    Private _udcGravelFootStepLeftSound As clsSound
+    Private _udcGravelFootStepRightSound As clsSound
+
+    'Ending thread
+    Private blnThreadDisposing As Boolean = False
+
+    'Avoid timer
+    Private blnAvoidTimer As Boolean = False
+
     'Bitmaps
     Private btmCharacter As Bitmap
     Private pntCharacter As Point
@@ -44,9 +59,6 @@ Public Class clsCharacter
 
     'Stop character from running
     Private blnStopCharacterFromRunning As Boolean = False
-
-    'Reload sound
-    Private udcReloadingSound As clsSound
 
     'Reload count
     Private intReloadTimes As Integer = 0
@@ -58,6 +70,8 @@ Public Class clsCharacter
     Private tmrAnimation As New System.Timers.Timer()
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, intLevel As Integer,
+                   udcReloadingSound As clsSound, udcGunShotSound As clsSound, udcStepSound As clsSound, udcWaterFootStepLeftSound As clsSound,
+                   udcWaterFootStepRightSound As clsSound, udcGravelFootStepLeftSound As clsSound, udcGravelFootStepRightSound As clsSound,
                    Optional blnImitation As Boolean = False, Optional blnStartAnimation As Boolean = False)
 
         'Set
@@ -71,6 +85,15 @@ Public Class clsCharacter
 
         'Set
         _blnImitation = blnImitation
+
+        'Set sounds
+        _udcGunShotSound = udcGunShotSound
+        _udcReloadingSound = udcReloadingSound
+        _udcStepSound = udcStepSound
+        _udcWaterFootStepLeftSound = udcWaterFootStepLeftSound
+        _udcWaterFootStepRightSound = udcWaterFootStepRightSound
+        _udcGravelFootStepLeftSound = udcGravelFootStepLeftSound
+        _udcGravelFootStepRightSound = udcGravelFootStepRightSound
 
         'Set enumerations
         intStatusModeStartToDo = eintStatusMode.Stand
@@ -87,7 +110,7 @@ Public Class clsCharacter
         'Set timer
         tmrAnimation.AutoReset = True
 
-        'Add handler for the timer animation
+        'Add handlers
         AddHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
 
         'Start
@@ -103,8 +126,10 @@ Public Class clsCharacter
         tmrAnimation.Enabled = False
 
         'Start thread
-        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-        thrAnimating.Start()
+        If Not blnAvoidTimer And Not blnThreadDisposing Then
+            thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+            thrAnimating.Start()
+        End If
 
     End Sub
 
@@ -134,7 +159,7 @@ Public Class clsCharacter
         'Set timer delay
         tmrAnimation.Interval = CDbl(intAnimatingDelay)
 
-        'Start thread
+        'Start the animating thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
         thrAnimating.Start()
 
@@ -160,6 +185,19 @@ Public Class clsCharacter
 
     Public Sub StopAndDispose()
 
+        'Set
+        blnThreadDisposing = True
+
+        'Disable timers
+        tmrAnimation.Enabled = False
+
+        'Stop and dispose timers
+        tmrAnimation.Stop()
+        tmrAnimation.Dispose()
+
+        'Remove handlers
+        RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
+
         'Abort animating
         If thrAnimating IsNot Nothing Then
             'Wait
@@ -167,13 +205,6 @@ Public Class clsCharacter
             End While
             'Set
             thrAnimating = Nothing
-            'Disable timer
-            tmrAnimation.Enabled = False
-            'Stop and dispose timer
-            tmrAnimation.Stop()
-            tmrAnimation.Dispose()
-            'Remove handler
-            RemoveHandler tmrAnimation.Elapsed, AddressOf ElapsedAnimation
         End If
 
     End Sub
@@ -194,8 +225,6 @@ Public Class clsCharacter
                 pntCharacter.X = intSpotX
 
             Case 3 'Shooting, delay here is CHARACTER_SHOOT_DELAY
-                'Play shot sound
-                Dim udcGunShotSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\GunShot.mp3", 1000, gintSoundVolume)
                 'Set frame, status mode processing, and picture
                 SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gbtmCharacterShoot(0), gbtmCharacterShootRed(0), gbtmCharacterShootBlue(0))
                 'Default
@@ -213,15 +242,13 @@ Public Class clsCharacter
                 'Default
                 pntCharacter.X = intSpotX
 
-            Case 6 'Reloading, delay here is 100
-                'Play reloading sound
-                udcReloadingSound = New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Reloading.mp3", 3000, gintSoundVolume)
+            Case 6 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Set frame, status mode processing, and picture
                 SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gbtmCharacterReload(0), gbtmCharacterReloadRed(0), gbtmCharacterReloadBlue(0))
                 'Default
                 pntCharacter.X = intSpotX
 
-            Case 7 To 26 'Reloading, delay here is 100
+            Case 7 To 26 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Set frame
                 intFrame += 1
                 'Set status mode processing
@@ -248,9 +275,9 @@ Public Class clsCharacter
                 'Set frame, status mode processing, and picture
                 SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gbtmCharacterRunning(0))
                 'Move point
-                pntCharacter.X = -GAME_BACKGROUND_MOVING_SPEED
+                pntCharacter.X = -CHARACTER_RESET_POINT
                 'Move game background
-                gpntGameBackground.X -= gMOVEMENTSPEED
+                gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED
                 'Move zombies
                 gMoveZombiesWhileRunning(gaudcZombies)
 
@@ -269,35 +296,31 @@ Public Class clsCharacter
                         btmCharacter = Nothing
                 End Select
                 'Move point
-                pntCharacter.X = -GAME_BACKGROUND_MOVING_SPEED
+                pntCharacter.X = -CHARACTER_RESET_POINT
+                'Move game background
+                gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED
+                'Move zombies
+                gMoveZombiesWhileRunning(gaudcZombies)
                 'Play foot steps sound
                 Select Case intFrame
                     Case 35, 42, 44
                         Select Case _intLevel
                             Case 1, 3
-                                Dim udcStepSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory & "Sounds\Step.mp3", 1000, gintSoundVolume)
+                                _udcStepSound.PlaySound(gintSoundVolume)
                             Case 2, 4
                                 If intFrame = 35 Or intFrame = 44 Then
-                                    Dim udcWaterFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                  "Sounds\WaterFootStepLeft.mp3", 1000, gintSoundVolume)
+                                    _udcWaterFootStepLeftSound.PlaySound(gintSoundVolume)
                                 Else
-                                    Dim udcWaterFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                   "Sounds\WaterFootStepRight.mp3", 1000, gintSoundVolume)
+                                    _udcWaterFootStepRightSound.PlaySound(gintSoundVolume)
                                 End If
                             Case 5
                                 If intFrame = 35 Or intFrame = 44 Then
-                                    Dim udcGravelFootStepLeftSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                   "Sounds\GravelFootStepLeft.mp3", 2000, gintSoundVolume)
+                                    _udcGravelFootStepLeftSound.PlaySound(gintSoundVolume)
                                 Else
-                                    Dim udcGravelFootStepRightSound As New clsSound(_frmToPass, AppDomain.CurrentDomain.BaseDirectory &
-                                                                                    "Sounds\GravelFootStepRight.mp3", 1000, gintSoundVolume)
+                                    _udcGravelFootStepRightSound.PlaySound(gintSoundVolume)
                                 End If
                         End Select
                 End Select
-                'Move game background
-                gpntGameBackground.X -= gMOVEMENTSPEED
-                'Move zombies
-                gMoveZombiesWhileRunning(gaudcZombies)
                 'Check if stop running
                 If intFrame = 45 Then
                     intFrame = 5
@@ -305,15 +328,17 @@ Public Class clsCharacter
 
         End Select
 
-        'Enable timer
-        tmrAnimation.Enabled = True
+        'Enable timer, unless need to avoid or dispose
+        If Not blnAvoidTimer And Not blnThreadDisposing Then
+            tmrAnimation.Enabled = True
+        End If
 
     End Sub
 
     Public Sub Shoot()
 
-        'Disable timer, set frame, and set status modes
-        DisableTimerSetFrameAndStatusModes(3, eintStatusMode.Shoot)
+        'Sync to the new frame
+        SyncToNewFrame(3, eintStatusMode.Shoot)
 
         'Check if not imitation
         If Not _blnImitation Then
@@ -331,9 +356,22 @@ Public Class clsCharacter
         'Restart thread
         Start(CHARACTER_SHOOT_DELAY)
 
+        'Play shooting sound
+        _udcGunShotSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
+
     End Sub
 
-    Private Sub DisableTimerSetFrameAndStatusModes(intFrameToBe As Integer, intStatusModeProcessingToBe As eintStatusMode)
+    Private Sub SyncToNewFrame(intFrameToBe As Integer, intStatusModeProcessingToBe As eintStatusMode)
+
+        'Set
+        blnAvoidTimer = False
+
+        'Wait
+        While thrAnimating.IsAlive
+        End While
+
+        'Set
+        blnAvoidTimer = True
 
         'Disable timer
         tmrAnimation.Enabled = False
@@ -347,12 +385,15 @@ Public Class clsCharacter
         'Set
         intFrame = intFrameToBe
 
+        'Reset
+        blnAvoidTimer = False
+
     End Sub
 
     Public Sub Reload()
 
-        'Disable timer, set frame, and set status modes
-        DisableTimerSetFrameAndStatusModes(6, eintStatusMode.Reload)
+        'Sync to the new frame
+        SyncToNewFrame(6, eintStatusMode.Reload)
 
         'Send data
         If blnSendData Then
@@ -368,12 +409,15 @@ Public Class clsCharacter
         'Restart thread
         Start(CHARACTER_RELOAD_DELAY)
 
+        'Play reloading sound
+        _udcReloadingSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
+
     End Sub
 
     Public Sub Stand()
 
-        'Disable timer, set frame, and set status modes
-        DisableTimerSetFrameAndStatusModes(2, eintStatusMode.Stand)
+        'Sync to the new frame
+        SyncToNewFrame(2, eintStatusMode.Stand)
 
         'Restart thread
         Start() 'Default CHARACTER_STAND_DELAY
@@ -382,8 +426,8 @@ Public Class clsCharacter
 
     Public Sub Run()
 
-        'Disable timer, set frame, and set status modes
-        DisableTimerSetFrameAndStatusModes(28, eintStatusMode.Run)
+        'Sync to the new frame
+        SyncToNewFrame(28, eintStatusMode.Run)
 
         'Restart thread
         Start(CHARACTER_RUN_DELAY)
@@ -481,15 +525,5 @@ Public Class clsCharacter
         End Set
 
     End Property
-
-    Public Sub StopReloadingSound()
-
-        'Stop sound
-        If udcReloadingSound IsNot Nothing Then
-            udcReloadingSound.StopAndCloseSound()
-            udcReloadingSound = Nothing
-        End If
-
-    End Sub
 
 End Class
