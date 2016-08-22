@@ -26,7 +26,7 @@ Public Class clsHelicopter
     Private thrAnimating As System.Threading.Thread
 
     'Timer
-    Private tmrAnimation As New System.Timers.Timer()
+    Private tmrAnimation As New System.Timers.Timer
 
     Public Sub New(frmToPass As Form, udcRotatingBladeSound As clsSound, Optional blnStartAnimation As Boolean = False)
 
@@ -34,7 +34,7 @@ Public Class clsHelicopter
         _frmToPass = frmToPass
 
         'Set animation
-        btmHelicopter = gbtmHelicopter(0)
+        btmHelicopter = gabtmHelicopterMemories(0)
 
         'Set
         pntHelicopter = New Point(2879, 0)
@@ -114,15 +114,15 @@ Public Class clsHelicopter
         'Check the frame
         Select Case intFrame
             Case 1
-                btmHelicopter = gbtmHelicopter(1)
+                btmHelicopter = gabtmHelicopterMemories(1)
             Case 2
-                btmHelicopter = gbtmHelicopter(2)
+                btmHelicopter = gabtmHelicopterMemories(2)
             Case 3
-                btmHelicopter = gbtmHelicopter(3)
+                btmHelicopter = gabtmHelicopterMemories(3)
             Case 4
-                btmHelicopter = gbtmHelicopter(4)
+                btmHelicopter = gabtmHelicopterMemories(4)
             Case 5
-                btmHelicopter = gbtmHelicopter(0)
+                btmHelicopter = gabtmHelicopterMemories(0)
         End Select
 
         'Increase frame

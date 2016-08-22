@@ -234,3 +234,14 @@ G:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Highscor
 G:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.exe
 G:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.pdb
 G:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.xml
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.exe.config
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last Stand.exe
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last Stand.xml
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last Stand.pdb
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Highscores.accdb
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.exe
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.pdb
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Stand.xml
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last_Stand.frmGame.resources
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.resources
+F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache

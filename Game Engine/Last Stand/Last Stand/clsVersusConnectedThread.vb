@@ -42,14 +42,11 @@ Public Class clsVersusConnectedThread
                 strData = srData.ReadLine 'Blocks, gets stuck here, this is why it is in a thread
             Catch ex As Exception
                 'Debug
-                strData = ""
-            End Try
-            'Abort thread if
-            If strData = "" Then
+                'Debug.Print(ex.ToString)
                 'Exit
                 blnConnectionLost = True
-                Exit While
-            End If
+                Exit Sub
+            End Try
             'Raise event, data ready
             RaiseEvent GotData(strData)
         End While
@@ -68,7 +65,7 @@ Public Class clsVersusConnectedThread
                 RaiseEvent ConnectionGone()
                 'Exit
                 blnReadLine = False
-                Exit While
+                Exit Sub
             End If
         End While
 

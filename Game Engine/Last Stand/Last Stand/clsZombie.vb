@@ -18,6 +18,7 @@ Public Class clsZombie
     Private _intSpeed As Integer = 25
     Private intFrameDeath As Integer = 0
     Private _strThisObjectNameCorrespondingToCharacter As String = ""
+    Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
     Private _blnSpawned As Boolean = False
 
     'Sound
@@ -38,7 +39,6 @@ Public Class clsZombie
 
     'Dying
     Private blnMarkedToDie As Boolean = False
-    Private blnHasPassedMarkToDie As Boolean = False
     Private blnIsDying As Boolean = False
 
     'Pinning
@@ -49,10 +49,10 @@ Public Class clsZombie
     Private blnDead As Boolean = False
 
     'Timer
-    Private tmrAnimation As New System.Timers.Timer()
+    Private tmrAnimation As New System.Timers.Timer
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, intSpeed As Integer, strThisObjectNameCorrespondingToCharacter As String,
-                   audcZombieDeathSound() As clsSound, Optional blnStartAnimation As Boolean = False, Optional blnSpawn As Boolean = False)
+                   audcZombieDeathSound() As clsSound, Optional blnImitation As Boolean = False, Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
@@ -61,10 +61,10 @@ Public Class clsZombie
         _strThisObjectNameCorrespondingToCharacter = strThisObjectNameCorrespondingToCharacter
 
         'Set
-        _intSpeed = intSpeed
+        _blnImitation = blnImitation
 
         'Set
-        _blnSpawned = blnSpawn
+        _intSpeed = intSpeed
 
         'Set sound
         _audcZombieDeathSound = audcZombieDeathSound
@@ -72,11 +72,11 @@ Public Class clsZombie
         'Set animation
         Select Case _strThisObjectNameCorrespondingToCharacter
             Case "udcCharacter"
-                btmZombie = gbtmZombieWalk(0)
+                btmZombie = gabtmZombieWalkMemories(0)
             Case "udcCharacterOne"
-                btmZombie = gbtmZombieWalkRed(0)
+                btmZombie = gabtmZombieWalkRedMemories(0)
             Case "udcCharacterTwo"
-                btmZombie = gbtmZombieWalkBlue(0)
+                btmZombie = gabtmZombieWalkBlueMemories(0)
         End Select
 
         'Set
@@ -92,7 +92,7 @@ Public Class clsZombie
 
         'Start
         If blnStartAnimation Then
-            Start()
+            Start(ZOMBIE_WALKING_DELAY)
         End If
 
     End Sub
@@ -127,13 +127,24 @@ Public Class clsZombie
 
     End Sub
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = ZOMBIE_WALKING_DELAY, Optional blnSpawn As Boolean = True)
+    Public Sub Start(Optional intAnimatingDelay As Integer = ZOMBIE_WALKING_DELAY)
 
         'Set timer delay
         tmrAnimation.Interval = CDbl(intAnimatingDelay)
 
+        'Start the animating thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
+
         'Set
-        _blnSpawned = blnSpawn
+        _blnSpawned = True 'This must be after the thread is created for timing problems
+
+    End Sub
+
+    Private Sub RestartAnimation(intAnimatingDelay As Integer)
+
+        'Set timer delay
+        tmrAnimation.Interval = CDbl(intAnimatingDelay)
 
         'Start the animating thread
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
@@ -209,8 +220,10 @@ Public Class clsZombie
         'Check frame for movement
         Select Case intFrame
             Case 1 To 6
-                'Walking, change point
-                pntZombie.X -= _intSpeed 'Speed they come at
+                'Walking, change point, only change if not a ghost like property
+                If Not _blnImitation Then
+                    pntZombie.X -= _intSpeed 'Speed they come at
+                End If
         End Select
 
         'Check frame
@@ -218,27 +231,27 @@ Public Class clsZombie
 
             Case 1 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(2, gbtmZombieWalk(0), gbtmZombieWalkRed(0), gbtmZombieWalkBlue(0))
+                SetFrameAndPicture(2, gabtmZombieWalkMemories(0), gabtmZombieWalkRedMemories(0), gabtmZombieWalkBlueMemories(0))
 
             Case 2 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(3, gbtmZombieWalk(1), gbtmZombieWalkRed(1), gbtmZombieWalkBlue(1))
+                SetFrameAndPicture(3, gabtmZombieWalkMemories(1), gabtmZombieWalkRedMemories(1), gabtmZombieWalkBlueMemories(1))
 
             Case 3 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(4, gbtmZombieWalk(2), gbtmZombieWalkRed(2), gbtmZombieWalkBlue(2))
+                SetFrameAndPicture(4, gabtmZombieWalkMemories(2), gabtmZombieWalkRedMemories(2), gabtmZombieWalkBlueMemories(2))
 
             Case 4 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(5, gbtmZombieWalk(3), gbtmZombieWalkRed(3), gbtmZombieWalkBlue(3))
+                SetFrameAndPicture(5, gabtmZombieWalkMemories(3), gabtmZombieWalkRedMemories(3), gabtmZombieWalkBlueMemories(3))
 
             Case 5 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(6, gbtmZombieWalk(2), gbtmZombieWalkRed(2), gbtmZombieWalkBlue(2))
+                SetFrameAndPicture(6, gabtmZombieWalkMemories(2), gabtmZombieWalkRedMemories(2), gabtmZombieWalkBlueMemories(2))
 
             Case 6 'Walking, delay here is ZOMBIE_WALKING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(1, gbtmZombieWalk(1), gbtmZombieWalkRed(1), gbtmZombieWalkBlue(1))
+                SetFrameAndPicture(1, gabtmZombieWalkMemories(1), gabtmZombieWalkRedMemories(1), gabtmZombieWalkBlueMemories(1))
 
             Case 7 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Declare
@@ -272,11 +285,11 @@ Public Class clsZombie
 
             Case 13 'Pinning, delay here is ZOMBIE_PINNING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(14, gbtmZombiePin(0), gbtmZombiePinRed(0), gbtmZombiePinBlue(0))
+                SetFrameAndPicture(14, gabtmZombiePinMemories(0), gabtmZombiePinRedMemories(0), gabtmZombiePinBlueMemories(0))
 
             Case 14 'Pinning, delay here is ZOMBIE_PINNING_DELAY
                 'Set frame and picture
-                SetFrameAndPicture(13, gbtmZombiePin(1), gbtmZombiePinRed(1), gbtmZombiePinBlue(1))
+                SetFrameAndPicture(13, gabtmZombiePinMemories(1), gabtmZombiePinRedMemories(1), gabtmZombiePinBlueMemories(1))
 
         End Select
 
@@ -304,20 +317,20 @@ Public Class clsZombie
             Case 1
                 Select Case _strThisObjectNameCorrespondingToCharacter
                     Case "udcCharacter"
-                        btmZombie = gbtmZombieDeath1(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeath1Memories(intZombieDeathIndex)
                     Case "udcCharacterOne"
-                        btmZombie = gbtmZombieDeathRed1(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeathRed1Memories(intZombieDeathIndex)
                     Case "udcCharacterTwo"
-                        btmZombie = gbtmZombieDeathBlue1(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeathBlue1Memories(intZombieDeathIndex)
                 End Select
             Case 2
                 Select Case _strThisObjectNameCorrespondingToCharacter
                     Case "udcCharacter"
-                        btmZombie = gbtmZombieDeath2(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeath2Memories(intZombieDeathIndex)
                     Case "udcCharacterOne"
-                        btmZombie = gbtmZombieDeathRed2(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeathRed2Memories(intZombieDeathIndex)
                     Case "udcCharacterTwo"
-                        btmZombie = gbtmZombieDeathBlue2(intZombieDeathIndex)
+                        btmZombie = gabtmZombieDeathBlue2Memories(intZombieDeathIndex)
                 End Select
         End Select
 
@@ -380,20 +393,6 @@ Public Class clsZombie
 
     End Property
 
-    Public Property HasPassedMarkToDie() As Boolean
-
-        'Return
-        Get
-            Return blnHasPassedMarkToDie
-        End Get
-
-        'Set
-        Set(value As Boolean)
-            blnHasPassedMarkToDie = value
-        End Set
-
-    End Property
-
     Public Sub Dying()
 
         'Set
@@ -403,7 +402,7 @@ Public Class clsZombie
         SyncToNewFrame(7)
 
         'Restart thread
-        Start(ZOMBIE_DYING_DELAY)
+        RestartAnimation(ZOMBIE_DYING_DELAY)
 
         'Declare
         Dim rndNumber As New Random
@@ -445,7 +444,7 @@ Public Class clsZombie
         SyncToNewFrame(13)
 
         'Restart thread
-        Start(ZOMBIE_PINNING_DELAY)
+        RestartAnimation(ZOMBIE_PINNING_DELAY)
 
     End Sub
 

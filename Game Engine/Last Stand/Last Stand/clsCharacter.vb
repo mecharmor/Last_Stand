@@ -34,6 +34,7 @@ Public Class clsCharacter
     Private _intBullets As Integer = 0 'Gun bullets
     Private _intLevel As Integer = 1 'Starting level
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
+    Private _blnSpawned As Boolean = False
 
     'Sounds
     Private _udcGunShotSound As clsSound
@@ -67,7 +68,7 @@ Public Class clsCharacter
     Private blnSendData As Boolean = False
 
     'Timer
-    Private tmrAnimation As New System.Timers.Timer()
+    Private tmrAnimation As New System.Timers.Timer
 
     Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, strThisObjectName As String, intLevel As Integer,
                    udcReloadingSound As clsSound, udcGunShotSound As clsSound, udcStepSound As clsSound, udcWaterFootStepLeftSound As clsSound,
@@ -100,7 +101,8 @@ Public Class clsCharacter
         intStatusModeAboutToDo = eintStatusMode.Stand
 
         'Set frame, status mode processing, and picture
-        SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
+        SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
+                                               gabtmCharacterStandBlueMemories(0))
 
         'Set
         intSpotX = intSpawnX
@@ -163,7 +165,35 @@ Public Class clsCharacter
         thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
         thrAnimating.Start()
 
+        'Set
+        _blnSpawned = True 'This must be after the thread is created for timing pro
+
     End Sub
+
+    Private Sub RestartAnimation(intAnimatingDelay As Integer)
+
+        'Set timer delay
+        tmrAnimation.Interval = CDbl(intAnimatingDelay)
+
+        'Start the animating thread
+        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
+        thrAnimating.Start()
+
+    End Sub
+
+    Public Property Spawned() As Boolean
+
+        'Return
+        Get
+            Return _blnSpawned
+        End Get
+
+        'Set
+        Set(value As Boolean)
+            _blnSpawned = value
+        End Set
+
+    End Property
 
     Public ReadOnly Property CharacterImage() As Bitmap
 
@@ -216,35 +246,41 @@ Public Class clsCharacter
 
             Case 1 'Standing, delay here is CHARACTER_STAND_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(2, eintStatusMode.Stand, gbtmCharacterStand(1), gbtmCharacterStandRed(1), gbtmCharacterStandBlue(1))
+                SetFrameStatusModeProcessingAndPicture(2, eintStatusMode.Stand, gabtmCharacterStandMemories(1), gabtmCharacterStandRedMemories(1),
+                                                       gabtmCharacterStandBlueMemories(1))
 
             Case 2 'Standing, delay here is CHARACTER_STAND_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
+                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
+                                                       gabtmCharacterStandBlueMemories(0))
                 'Default
                 pntCharacter.X = intSpotX
 
             Case 3 'Shooting, delay here is CHARACTER_SHOOT_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gbtmCharacterShoot(0), gbtmCharacterShootRed(0), gbtmCharacterShootBlue(0))
+                SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gabtmCharacterShootMemories(0), gabtmCharacterShootRedMemories(0),
+                                                       gabtmCharacterShootBlueMemories(0))
                 'Default
                 pntCharacter.X = intSpotX
 
             Case 4 'Shooting, delay here is CHARACTER_SHOOT_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Shoot, gbtmCharacterShoot(1), gbtmCharacterShootRed(1), gbtmCharacterShootBlue(1))
+                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Shoot, gabtmCharacterShootMemories(1), gabtmCharacterShootRedMemories(1),
+                                                       gabtmCharacterShootBlueMemories(1))
 
             Case 5
                 'Change delay
                 tmrAnimation.Interval = CHARACTER_STAND_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gbtmCharacterStand(0), gbtmCharacterStandRed(0), gbtmCharacterStandBlue(0))
+                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
+                                                       gabtmCharacterStandBlueMemories(0))
                 'Default
                 pntCharacter.X = intSpotX
 
             Case 6 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gbtmCharacterReload(0), gbtmCharacterReloadRed(0), gbtmCharacterReloadBlue(0))
+                SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gabtmCharacterReloadMemories(0), gabtmCharacterReloadRedMemories(0),
+                                                       gabtmCharacterReloadBlueMemories(0))
                 'Default
                 pntCharacter.X = intSpotX
 
@@ -256,16 +292,17 @@ Public Class clsCharacter
                 'Set picture
                 Select Case _strThisObjectName
                     Case "udcCharacter"
-                        btmCharacter = gbtmCharacterReload(intFrame - 7)
+                        btmCharacter = gabtmCharacterReloadMemories(intFrame - 7)
                     Case "udcCharacterOne"
-                        btmCharacter = gbtmCharacterReloadRed(intFrame - 7)
+                        btmCharacter = gabtmCharacterReloadRedMemories(intFrame - 7)
                     Case "udcCharacterTwo"
-                        btmCharacter = gbtmCharacterReloadBlue(intFrame - 7)
+                        btmCharacter = gabtmCharacterReloadBlueMemories(intFrame - 7)
                 End Select
 
             Case 27 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Reload, gbtmCharacterReload(21), gbtmCharacterReloadRed(21), gbtmCharacterReloadBlue(21))
+                SetFrameStatusModeProcessingAndPicture(5, eintStatusMode.Reload, gabtmCharacterReloadMemories(21), gabtmCharacterReloadRedMemories(21),
+                                                       gabtmCharacterReloadBlueMemories(21))
                 'Reset bullets
                 _intBullets = 0
                 'Reset key press event bullets
@@ -273,7 +310,7 @@ Public Class clsCharacter
 
             Case 28
                 'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gbtmCharacterRunning(0))
+                SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gabtmCharacterRunningMemories(0))
                 'Move point
                 pntCharacter.X = -CHARACTER_RESET_POINT
                 'Move game background
@@ -289,7 +326,7 @@ Public Class clsCharacter
                 'Set picture
                 Select Case _strThisObjectName
                     Case "udcCharacter"
-                        btmCharacter = gbtmCharacterRunning(intFrame - 29) '30-29 = 1 in the array
+                        btmCharacter = gabtmCharacterRunningMemories(intFrame - 29) '30-29 = 1 in the array
                     Case "udcCharacterOne"
                         btmCharacter = Nothing
                     Case "udcCharacterTwo"
@@ -337,9 +374,6 @@ Public Class clsCharacter
 
     Public Sub Shoot()
 
-        'Sync to the new frame
-        SyncToNewFrame(3, eintStatusMode.Shoot)
-
         'Check if not imitation
         If Not _blnImitation Then
             'Increase bullet
@@ -353,8 +387,11 @@ Public Class clsCharacter
             End If
         End If
 
+        'Sync to the new frame
+        SyncToNewFrame(3, eintStatusMode.Shoot)
+
         'Restart thread
-        Start(CHARACTER_SHOOT_DELAY)
+        RestartAnimation(CHARACTER_SHOOT_DELAY)
 
         'Play shooting sound
         _udcGunShotSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
@@ -398,7 +435,7 @@ Public Class clsCharacter
         'Send data
         If blnSendData Then
             'Send
-            gSendData("5|")
+            gSendData(6, "")
             'Set
             blnSendData = False
         End If
@@ -407,7 +444,7 @@ Public Class clsCharacter
         intReloadTimes += 1
 
         'Restart thread
-        Start(CHARACTER_RELOAD_DELAY)
+        RestartAnimation(CHARACTER_RELOAD_DELAY)
 
         'Play reloading sound
         _udcReloadingSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
@@ -420,7 +457,7 @@ Public Class clsCharacter
         SyncToNewFrame(2, eintStatusMode.Stand)
 
         'Restart thread
-        Start() 'Default CHARACTER_STAND_DELAY
+        RestartAnimation(CHARACTER_STAND_DELAY)
 
     End Sub
 
@@ -430,7 +467,7 @@ Public Class clsCharacter
         SyncToNewFrame(28, eintStatusMode.Run)
 
         'Restart thread
-        Start(CHARACTER_RUN_DELAY)
+        RestartAnimation(CHARACTER_RUN_DELAY)
 
     End Sub
 
