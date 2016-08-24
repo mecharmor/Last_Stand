@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAME_VERSION As String = "1.47"
+    Private Const GAME_VERSION As String = "1.48"
     Private Const ORIGINAL_SCREEN_WIDTH As Integer = 1680
     Private Const ORIGINAL_SCREEN_HEIGHT As Integer = 1050
     Private Const WINDOW_MESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -35,8 +35,7 @@ Public Class frmGame
     Private thrRendering As System.Threading.Thread
     Private blnThreadSupported As Boolean = False
     Private rectFullScreen As Rectangle
-    Private gGraphics As Graphics
-    Private btmCanvas As New Bitmap(ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT, System.Drawing.Imaging.PixelFormat.Format32bppPArgb) 'Original resolution of our game
+    Private btmCanvas As New Bitmap(ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT, Imaging.PixelFormat.Format32bppPArgb) 'Screen size here
     Private pntTopLeft As New Point(0, 0)
     Private intCanvasMode As Integer = 0 'Default menu screen
     Private intCanvasShow As Integer = 0 'Default, no animation
@@ -310,8 +309,8 @@ Public Class frmGame
     Private blnFirstTimeIPAddressTyping As Boolean = True 'Defaulted
     Private btmVersusBackgroundFile As Bitmap
     Private btmVersusBackgroundMemory As Bitmap
-    Private btmVersusNicknameTextFile As Bitmap
-    Private btmVersusNicknameTextMemory As Bitmap
+    Private btmVersusNickNameTextFile As Bitmap
+    Private btmVersusNickNameTextMemory As Bitmap
     Private pntVersusBlackOutline As New Point(100, 150)
     Private btmVersusHostTextFile As Bitmap
     Private btmVersusHostTextMemory As Bitmap
@@ -574,7 +573,7 @@ Public Class frmGame
 
         'Versus screen to put in an IP address
         LoadPictureFileAndCopyBitmapIntoMemory(btmVersusBackgroundFile, btmVersusBackgroundMemory, "Images\Versus\VersusBackground.jpg")
-        LoadPictureFileAndCopyBitmapIntoMemory(btmVersusNicknameTextFile, btmVersusNicknameTextMemory, "Images\Versus\VersusNickname.png")
+        LoadPictureFileAndCopyBitmapIntoMemory(btmVersusNickNameTextFile, btmVersusNickNameTextMemory, "Images\Versus\VersusNickname.png")
         LoadPictureFileAndCopyBitmapIntoMemory(btmVersusHostTextFile, btmVersusHostTextMemory, "Images\Versus\VersusHost.png")
         LoadPictureFileAndCopyBitmapIntoMemory(btmVersusOrTextFile, btmVersusOrTextMemory, "Images\Versus\VersusOr.png")
         LoadPictureFileAndCopyBitmapIntoMemory(btmVersusJoinTextFile, btmVersusJoinTextMemory, "Images\Versus\VersusJoin.png")
@@ -607,17 +606,109 @@ Public Class frmGame
         'Load picture file bitmap
         btmByRefBitmapFile = New Bitmap(Image.FromFile(strDirectory & strImageDirectory))
 
-        'Memory copy declaration
-        btmByRefBitmapMemory = New Bitmap(btmByRefBitmapFile.Width, btmByRefBitmapFile.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb)
+        'Declare
+        Dim intWidthFile As Integer = btmByRefBitmapFile.Width
+        Dim intHeightFile As Integer = btmByRefBitmapFile.Height
+
+        'Make new memory copy
+        btmByRefBitmapMemory = New Bitmap(intWidthFile, intHeightFile, Imaging.PixelFormat.Format32bppPArgb)
 
         'Paint onto the memory copy
-        PaintOnBitmap(btmByRefBitmapMemory)
-
-        'Draw
-        gGraphics.DrawImageUnscaled(btmByRefBitmapFile, 0, 0)
+        DrawGraphicsByPoint(Graphics.FromImage(btmByRefBitmapMemory), btmByRefBitmapFile, pntTopLeft)
 
         'Dispose file lock
         btmByRefBitmapFile.Dispose()
+
+        'Empty
+        btmByRefBitmapFile = Nothing
+
+    End Sub
+
+    Private Sub DrawGraphicsByPoint(ByRef gByRefGraphicsToDrawOn As Graphics, btmBitmapToDraw As Bitmap, pntBitmapToDraw As Point)
+
+        'Declare
+        Dim gGraphics As Graphics = gByRefGraphicsToDrawOn
+
+        'Set options for fastest rendering
+        SetGraphicOptions(gGraphics)
+
+        'Draw
+        gGraphics.DrawImageUnscaled(btmBitmapToDraw, pntBitmapToDraw)
+
+        'Dispose graphics
+        gByRefGraphicsToDrawOn.Dispose()
+        gByRefGraphicsToDrawOn = Nothing
+
+        'Dispose pointer
+        gGraphics.Dispose()
+        gGraphics = Nothing
+
+    End Sub
+
+    Private Sub SetGraphicOptions(gGraphics As Graphics)
+
+        'Set options for fastest rendering
+        With gGraphics
+            .CompositingMode = Drawing2D.CompositingMode.SourceOver
+            .CompositingQuality = Drawing2D.CompositingQuality.HighSpeed
+            .SmoothingMode = Drawing2D.SmoothingMode.None
+            .InterpolationMode = Drawing2D.InterpolationMode.NearestNeighbor
+            .TextRenderingHint = Drawing.Text.TextRenderingHint.SingleBitPerPixel
+            .PixelOffsetMode = Drawing2D.PixelOffsetMode.HighSpeed
+        End With
+
+    End Sub
+
+    Private Sub DrawGraphicsToScreenResolution(ByRef gByRefGraphicsToDrawOn As Graphics, btmBitmapToDraw As Bitmap, rectBitmapToDraw As Rectangle)
+
+        'Declare
+        Dim gGraphics As Graphics = gByRefGraphicsToDrawOn
+
+        'Set options for fastest rendering
+        SetGraphicOptions(gGraphics)
+
+        'Draw
+        gGraphics.DrawImage(btmBitmapToDraw, rectBitmapToDraw) 'Scales it down by the rectangle
+
+        'Dispose graphics
+        gByRefGraphicsToDrawOn.Dispose()
+        gByRefGraphicsToDrawOn = Nothing
+
+        'Dispose pointer
+        gGraphics.Dispose()
+        gGraphics = Nothing
+
+    End Sub
+
+    Private Sub DrawText(ByRef gByRefGraphicsToDrawOn As Graphics, strText As String, sngFontSize As Single, colColor As Color, sngX As Single, sngY As Single,
+                         sngWidth As Single, sngHeight As Single)
+
+        'Declare
+        Dim gGraphics As Graphics = gByRefGraphicsToDrawOn
+        Dim fntFont As New Font("SketchFlow Print", sngFontSize, FontStyle.Regular)
+        Dim bruBrush As New System.Drawing.SolidBrush(colColor)
+
+        'Set options for fastest rendering
+        SetGraphicOptions(gGraphics)
+
+        'Draw
+        gGraphics.DrawString(strText, fntFont, bruBrush, New RectangleF(sngX, sngY, sngWidth, sngHeight))
+
+        'Dispose
+        fntFont.Dispose()
+        bruBrush.Dispose()
+
+        'Empty
+        fntFont = Nothing
+        bruBrush = Nothing
+
+        'Dispose graphics
+        gByRefGraphicsToDrawOn.Dispose()
+        gByRefGraphicsToDrawOn = Nothing
+
+        'Dispose pointer
+        gGraphics.Dispose()
+        gGraphics = Nothing
 
     End Sub
 
@@ -894,9 +985,6 @@ Public Class frmGame
 
         'Stop all sounds
         StopAndCloseAllSounds()
-
-        'Dipose graphics
-        gGraphics.Dispose()
 
     End Sub
 
@@ -1367,12 +1455,8 @@ Public Class frmGame
                 Case 11, 12 'Path system
                     PathChoices()
             End Select
-            'Select to paint on screen
-            gGraphics = Me.CreateGraphics()
-            'Set graphic options
-            SetDefaultGraphicOptions()
             'Paint on screen
-            gGraphics.DrawImage(btmCanvas, rectFullScreen)
+            DrawGraphicsToScreenResolution(Me.CreateGraphics(), btmCanvas, rectFullScreen)
             'If changing screen, we must change resolution in this thread or else strange things happen
             ScreenResolutionChanged()
             'Load parts of the game here after a screen has been shown, slowly load, this only happens during the loading screens
@@ -1481,20 +1565,6 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub SetDefaultGraphicOptions()
-
-        'Set options for fastest rendering
-        With gGraphics
-            .CompositingMode = Drawing2D.CompositingMode.SourceOver
-            .CompositingQuality = Drawing2D.CompositingQuality.HighSpeed
-            .SmoothingMode = Drawing2D.SmoothingMode.None
-            .InterpolationMode = Drawing2D.InterpolationMode.NearestNeighbor
-            .TextRenderingHint = Drawing.Text.TextRenderingHint.SingleBitPerPixel
-            .PixelOffsetMode = Drawing2D.PixelOffsetMode.HighSpeed
-        End With
-
-    End Sub
-
     Private Sub RenderMenuScreen()
 
         'Declare
@@ -1517,20 +1587,17 @@ Public Class frmGame
         btmFogBackCloneScreenShown = btmFogBackMemory.Clone(rectSourceBack, Imaging.PixelFormat.Format32bppPArgb) 'If out of memory here, could be x + width is too short
         btmFogFrontCloneScreenShown = btmFogFrontMemory.Clone(rectSourceFront, Imaging.PixelFormat.Format32bppPArgb) 'If out of memory here, could be x + width is too short
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
-        'Draw menu
-        gGraphics.DrawImageUnscaled(btmMenuBackgroundMemory, pntTopLeft)
+        'Paint onto canvas the menu background
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmMenuBackgroundMemory, pntTopLeft)
 
         'Draw fog in back
-        gGraphics.DrawImageUnscaled(btmFogBackCloneScreenShown, pntTopLeft.X, FOG_BACK_DISTANCE_Y)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmFogBackCloneScreenShown, New Point(pntTopLeft.X, FOG_BACK_DISTANCE_Y))
 
         'Draw Archer
-        gGraphics.DrawImageUnscaled(btmArcherMemory, pntArcher)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmArcherMemory, pntArcher)
 
         'Draw fog in front
-        gGraphics.DrawImageUnscaled(btmFogFrontCloneScreenShown, pntTopLeft.X, FOG_FRONT_DISTANCE_Y)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmFogFrontCloneScreenShown, New Point(pntTopLeft.X, FOG_FRONT_DISTANCE_Y))
 
         'Dispose of fog clones because clones expand paint data, will cause memory leak
         btmFogBackCloneScreenShown.Dispose()
@@ -1540,64 +1607,61 @@ Public Class frmGame
 
         'Draw start text
         If intCanvasShow = 1 Then
-            gGraphics.DrawImageUnscaled(btmStartHoverTextMemory, pntStartHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStartHoverTextMemory, pntStartHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmStartTextMemory, pntStartText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStartTextMemory, pntStartText)
         End If
 
         'Draw highscores text
         If intCanvasShow = 2 Then
-            gGraphics.DrawImageUnscaled(btmHighscoresHoverTextMemory, pntHighscoresHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmHighscoresHoverTextMemory, pntHighscoresHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmHighscoresTextMemory, pntHighscoresText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmHighscoresTextMemory, pntHighscoresText)
         End If
 
         'Draw story text
         If intCanvasShow = 3 Then
-            gGraphics.DrawImageUnscaled(btmStoryHoverTextMemory, pntStoryHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStoryHoverTextMemory, pntStoryHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmStoryTextMemory, pntStoryText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStoryTextMemory, pntStoryText)
         End If
 
         'Draw options text
         If intCanvasShow = 4 Then
-            gGraphics.DrawImageUnscaled(btmOptionsHoverTextMemory, pntOptionsHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmOptionsHoverTextMemory, pntOptionsHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmOptionsTextMemory, pntOptionsText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmOptionsTextMemory, pntOptionsText)
         End If
 
         'Draw credits text
         If intCanvasShow = 5 Then
-            gGraphics.DrawImageUnscaled(btmCreditsHoverTextMemory, pntCreditsHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmCreditsHoverTextMemory, pntCreditsHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmCreditsTextMemory, pntCreditsText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmCreditsTextMemory, pntCreditsText)
         End If
 
         'Draw versus text
         If intCanvasShow = 6 Then
-            gGraphics.DrawImageUnscaled(btmVersusHoverTextMemory, pntVersusHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusHoverTextMemory, pntVersusHoverText)
         Else
-            gGraphics.DrawImageUnscaled(btmVersusTextMemory, pntVersusText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusTextMemory, pntVersusText)
         End If
 
         'Draw last stand text
-        gGraphics.DrawImageUnscaled(btmLastStandTextMemory, pntLastStandText)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLastStandTextMemory, pntLastStandText)
 
     End Sub
 
     Private Sub RenderOptionsScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw options background
-        gGraphics.DrawImageUnscaled(btmOptionsBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmOptionsBackgroundMemory, pntTopLeft)
 
         'Draw resolution text
-        gGraphics.DrawImageUnscaled(btmResolutionTextMemory, pntResolutionText)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmResolutionTextMemory, pntResolutionText)
 
         'Draw sound text
-        gGraphics.DrawImageUnscaled(btmSoundTextMemory, pntSoundText)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmSoundTextMemory, pntSoundText)
 
         'Check which resolution
         CheckResolutionMode(0, btm800x600TextMemory, btmNot800x600TextMemory, pnt800x600Text)
@@ -1608,18 +1672,18 @@ Public Class frmGame
         CheckResolutionMode(5, btmFullScreenTextMemory, btmNotFullScreenTextMemory, pntFullscreenText)
 
         'Draw sound bar
-        gGraphics.DrawImageUnscaled(btmSoundBarMemory, pntSoundBar)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmSoundBarMemory, pntSoundBar)
 
         'Draw sound percentage
-        gGraphics.DrawImageUnscaled(btmSoundPercent, pntSoundPercent)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmSoundPercent, pntSoundPercent)
 
         'Draw slider
-        gGraphics.DrawImageUnscaled(btmSliderMemory, pntSlider)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmSliderMemory, pntSlider)
 
         'Draw version
-        DrawText(gGraphics, "Version " & GAME_VERSION, 50, Color.Black, 33, 953, 1000, 125) 'Black shadow
-        DrawText(gGraphics, "Version " & GAME_VERSION, 50, Color.Black, 35, 955, 1000, 125) 'Black shadow
-        DrawText(gGraphics, "Version " & GAME_VERSION, 50, Color.Red, 30, 950, 1000, 125) 'Overlay
+        DrawText(Graphics.FromImage(btmCanvas), "Version " & GAME_VERSION, 50, Color.Black, 33, 953, 1000, 125) 'Black shadow
+        DrawText(Graphics.FromImage(btmCanvas), "Version " & GAME_VERSION, 50, Color.Black, 35, 955, 1000, 125) 'Black shadow
+        DrawText(Graphics.FromImage(btmCanvas), "Version " & GAME_VERSION, 50, Color.Red, 30, 950, 1000, 125) 'Overlay
 
         'Show back button or hover back button
         ShowBackButtonOrHoverBackButton()
@@ -1631,10 +1695,10 @@ Public Class frmGame
         'Show back button or hover back button
         If intCanvasShow = 1 Then
             'Draw back text as hovered
-            gGraphics.DrawImageUnscaled(btmBackHoverTextMemory, pntBackHoverText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmBackHoverTextMemory, pntBackHoverText)
         Else
             'Draw back text
-            gGraphics.DrawImageUnscaled(btmBackTextMemory, pntBackText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmBackTextMemory, pntBackText)
         End If
 
     End Sub
@@ -1643,71 +1707,55 @@ Public Class frmGame
 
         'Check resolution before drawing
         If intResolutionMode = intModeSelected Then
-            gGraphics.DrawImageUnscaled(btmResolutionText, pntResolutionText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmResolutionText, pntResolutionText)
         Else
-            gGraphics.DrawImageUnscaled(btmNotResolutionText, pntResolutionText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmNotResolutionText, pntResolutionText)
         End If
 
     End Sub
 
     Private Sub LoadingGameScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw loading background
-        gGraphics.DrawImageUnscaled(btmLoadingBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingBackgroundMemory, pntTopLeft)
 
         'Draw loading bar
-        gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingBar, pntLoadingBar)
 
         'Draw Loading text
         If intCanvasShow = 0 And intCanvasMode = 2 Then
-            gGraphics.DrawImageUnscaled(btmLoadingTextMemory, pntLoadingText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingTextMemory, pntLoadingText)
         Else
-            gGraphics.DrawImageUnscaled(btmLoadingStartTextMemory, pntLoadingStartText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingStartTextMemory, pntLoadingStartText)
         End If
 
         'Draw paragraph
         If btmLoadingParagraph IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmLoadingParagraph, pntLoadingParagraph)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingParagraph, pntLoadingParagraph)
         End If
 
     End Sub
 
     Private Sub PathChoices()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw background
-        gGraphics.DrawImageUnscaled(btmPath, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmPath, pntTopLeft)
 
         'Text
-        DrawText(gGraphics, "Pick your path...", 50, Color.Black, 33, 953, 1000, 125) 'Black shadow
-        DrawText(gGraphics, "Pick your path...", 50, Color.Black, 35, 955, 1000, 125) 'Black shadow
-        DrawText(gGraphics, "Pick your path...", 50, Color.Red, 30, 950, 1000, 125) 'Overlay
+        DrawText(Graphics.FromImage(btmCanvas), "Pick your path...", 50, Color.Black, 33, 953, 1000, 125) 'Black shadow
+        DrawText(Graphics.FromImage(btmCanvas), "Pick your path...", 50, Color.Black, 35, 955, 1000, 125) 'Black shadow
+        DrawText(Graphics.FromImage(btmCanvas), "Pick your path...", 50, Color.Red, 30, 950, 1000, 125) 'Overlay
 
         'Show back button or hover back button
         ShowBackButtonOrHoverBackButton()
 
     End Sub
 
-    Private Sub PaintOnBitmap(imgToPaintOn As System.Drawing.Image)
-
-        'What to draw on
-        gGraphics = Graphics.FromImage(imgToPaintOn)
-
-        'Set graphic options
-        SetDefaultGraphicOptions()
-
-    End Sub
-
-    Private Sub DrawStats(gGraphicsDevice As Graphics, intZombieKillsToBe As Integer, intReloadTimeUsedToBe As Integer)
+    Private Sub DrawStats(intZombieKillsToBe As Integer, intReloadTimeUsedToBe As Integer)
 
         'Draw zombie kills
-        DrawText(gGraphicsDevice, CStr(intZombieKillsToBe), 85, Color.Black, 1065, 417, 1000, 125)
-        DrawText(gGraphicsDevice, CStr(intZombieKillsToBe), 85, Color.White, 1060, 412, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), CStr(intZombieKillsToBe), 85, Color.Black, 1065, 417, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), CStr(intZombieKillsToBe), 85, Color.White, 1060, 412, 1000, 125)
 
         'Declare
         Dim tsTimeSpan As TimeSpan
@@ -1718,8 +1766,8 @@ Public Class frmGame
         strElapsedTime = CStr(CInt(tsTimeSpan.TotalSeconds)) & " Sec"
 
         'Draw survival time
-        DrawText(gGraphicsDevice, strElapsedTime, 85, Color.Black, 1065, 615, 1000, 125)
-        DrawText(gGraphicsDevice, strElapsedTime, 85, Color.White, 1060, 610, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), strElapsedTime, 85, Color.Black, 1065, 615, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), strElapsedTime, 85, Color.White, 1060, 610, 1000, 125)
 
         'Declare
         Dim intElapsedTime As Integer = 0
@@ -1732,8 +1780,8 @@ Public Class frmGame
         intWPM = CInt((intZombieKillsToBe / (intElapsedTime / 60)))
 
         'Draw WPM
-        DrawText(gGraphics, CStr(intWPM), 85, Color.Black, 1065, 808, 1000, 125)
-        DrawText(gGraphics, CStr(intWPM), 85, Color.White, 1060, 803, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), CStr(intWPM), 85, Color.Black, 1065, 808, 1000, 125)
+        DrawText(Graphics.FromImage(btmCanvas), CStr(intWPM), 85, Color.White, 1060, 803, 1000, 125)
 
     End Sub
 
@@ -1742,14 +1790,11 @@ Public Class frmGame
         'Check if black screen displayed
         If blnBlackScreenFinished Then
 
-            'Paint on the canvas
-            PaintOnBitmap(btmCanvas)
-
             'Check if beat level
             If Not blnPlayerWasPinned Then
 
                 'Paint black background
-                gGraphics.DrawImageUnscaled(abtmBlackScreenMemories(2), pntTopLeft)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), abtmBlackScreenMemories(2), pntTopLeft)
 
                 'Check which level was completed
                 Select Case intLevel
@@ -1771,21 +1816,21 @@ Public Class frmGame
                         ChangeCanvasModeAndChangeCanvasShowAndPlayClickSound(12, 0, False) 'This exits the game screen to path choices
                     Case 5
                         'Show win overlay
-                        gGraphics.DrawImageUnscaled(btmWinOverlayMemory, pntTopLeft)
+                        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmWinOverlayMemory, pntTopLeft)
                         'Draw stats
-                        DrawStats(gGraphics, intZombieKillsCombined, intReloadTimes)
+                        DrawStats(intZombieKillsCombined, intReloadTimes)
                 End Select
 
             Else
 
                 'Show death screen fading
-                gGraphics.DrawImageUnscaled(btmDeathScreen, pntTopLeft)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmDeathScreen, pntTopLeft)
 
                 'Show death overlay
-                gGraphics.DrawImageUnscaled(btmDeathOverlayMemory, pntTopLeft)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmDeathOverlayMemory, pntTopLeft)
 
                 'Draw stats
-                DrawStats(gGraphics, intZombieKillsCombined, intReloadTimes)
+                DrawStats(intZombieKillsCombined, intReloadTimes)
 
             End If
 
@@ -1811,13 +1856,10 @@ Public Class frmGame
 
     Private Sub PlaySinglePlayerGame()
 
-        'Paint on copy of the background
-        PaintOnBitmap(btmGameBackgroundMemory)
-
         'Check for helicopter
         If udcHelicopter IsNot Nothing Then
             'Draw
-            gGraphics.DrawImageUnscaled(udcHelicopter.HelicopterImage, udcHelicopter.HelicopterPoint)
+            DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), udcHelicopter.HelicopterImage, udcHelicopter.HelicopterPoint)
         End If
 
         'Draw dead zombies permanently
@@ -1867,7 +1909,7 @@ Public Class frmGame
         End If
 
         'Draw character
-        gGraphics.DrawImageUnscaled(udcCharacter.CharacterImage, udcCharacter.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacter.CharacterImage, udcCharacter.CharacterPoint)
 
         'Draw zombies
         For intLoop As Integer = 0 To gaudcZombies.GetUpperBound(0)
@@ -1912,23 +1954,23 @@ Public Class frmGame
                     End If
                 End If
                 'Draw zombies dying, pinning or walking
-                gGraphics.DrawImageUnscaled(gaudcZombies(intLoop).ZombieImage, gaudcZombies(intLoop).ZombiePoint)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), gaudcZombies(intLoop).ZombieImage, gaudcZombies(intLoop).ZombiePoint)
             End If
         Next
 
         'Draw text in the word bar
-        DrawText(gGraphics, strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
-        DrawText(gGraphics, strTheWord, 50, Color.Black, 528, 93, 1000, 100) 'Shadow
-        DrawText(gGraphics, strTheWord, 50, Color.White, 525, 90, 1000, 100) 'White text
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 528, 93, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.White, 525, 90, 1000, 100) 'White text
 
         'Word overlay
-        DrawText(gGraphics, strTheWord.Substring(0, intWordIndex), 50, Color.Red, 525, 90, 1000, 100) 'Overlay
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord.Substring(0, intWordIndex), 50, Color.Red, 525, 90, 1000, 100) 'Overlay
 
         'Show magazine with bullet count
-        gGraphics.DrawImageUnscaled(btmAK47MagazineMemory, pntAK47Magazine)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmAK47MagazineMemory, pntAK47Magazine)
 
         'Draw bullet count on magazine
-        DrawText(gGraphics, CStr(30 - udcCharacter.BulletsUsed), 40, Color.Red, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
+        DrawText(Graphics.FromImage(btmCanvas), CStr(30 - udcCharacter.BulletsUsed), 40, Color.Red, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
 
         'Check if need to black screen
         If blnBeatLevel Or blnPlayerWasPinned Then
@@ -1954,7 +1996,7 @@ Public Class frmGame
                     End If
             End Select
             'Paint black overlay
-            gGraphics.DrawImageUnscaled(btmBlackScreen, pntTopLeft)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmBlackScreen, pntTopLeft)
             'Check
             If btmBlackScreen Is abtmBlackScreenMemories(2) And blnBeatLevel Then
                 'Set
@@ -1980,7 +2022,7 @@ Public Class frmGame
                 'Set
                 pntTemp = New Point(audcZombiesType(intLoop).ZombiePoint.X + CInt(Math.Abs(gpntGameBackground.X)), audcZombiesType(intLoop).ZombiePoint.Y)
                 'Draw dead
-                gGraphics.DrawImageUnscaled(audcZombiesType(intLoop).ZombieImage, pntTemp)
+                DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), audcZombiesType(intLoop).ZombieImage, pntTemp)
                 'Increase count
                 intByRefZombieKills += 1
                 'Start a new zombie
@@ -1992,9 +2034,6 @@ Public Class frmGame
 
     Private Sub PaintOnCanvasCloneScreenAndDrawWordBar()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Declare
         Dim rectSource As New Rectangle(Math.Abs(gpntGameBackground.X), 0, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT)
 
@@ -2002,14 +2041,14 @@ Public Class frmGame
         btmGameBackgroundCloneScreenShown = btmGameBackgroundMemory.Clone(rectSource, Imaging.PixelFormat.Format32bppPArgb) 'If out of memory here, could be x + width is too short
 
         'Draw the background to screen with the cloned version
-        gGraphics.DrawImageUnscaled(btmGameBackgroundCloneScreenShown, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmGameBackgroundCloneScreenShown, pntTopLeft)
 
         'Dispose because clone just makes the picture expand with more data
         btmGameBackgroundCloneScreenShown.Dispose()
         btmGameBackgroundCloneScreenShown = Nothing
 
         'Draw word bar
-        gGraphics.DrawImageUnscaled(btmWordBarMemory, pntWordBar)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmWordBarMemory, pntWordBar)
 
     End Sub
 
@@ -2651,28 +2690,25 @@ Public Class frmGame
     Private Sub DrawDatabaseType(strText As String)
 
         'Draw
-        DrawText(gGraphics, strText, 34, Color.Black, 32, 22, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
-        DrawText(gGraphics, strText, 34, Color.Black, 33, 23, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
-        DrawText(gGraphics, strText, 34, Color.Black, 34, 24, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
-        DrawText(gGraphics, strText, 34, Color.Black, 35, 25, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
-        DrawText(gGraphics, strText, 34, Color.Red, 30, 20, ORIGINAL_SCREEN_WIDTH, 100)
+        DrawText(Graphics.FromImage(btmCanvas), strText, 34, Color.Black, 32, 22, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 34, Color.Black, 33, 23, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 34, Color.Black, 34, 24, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 34, Color.Black, 35, 25, ORIGINAL_SCREEN_WIDTH, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 34, Color.Red, 30, 20, ORIGINAL_SCREEN_WIDTH, 100)
 
     End Sub
 
     Private Sub HighscoresScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw highscores background
-        gGraphics.DrawImageUnscaled(btmHighscoresBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmHighscoresBackgroundMemory, pntTopLeft)
 
         'Draw highscores
-        DrawText(gGraphics, strHighscores, 34, Color.Black, 32, 222, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
-        DrawText(gGraphics, strHighscores, 34, Color.Black, 33, 223, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
-        DrawText(gGraphics, strHighscores, 34, Color.Black, 34, 224, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
-        DrawText(gGraphics, strHighscores, 34, Color.Black, 35, 225, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
-        DrawText(gGraphics, strHighscores, 34, Color.Red, 30, 220, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT)
+        DrawText(Graphics.FromImage(btmCanvas), strHighscores, 34, Color.Black, 32, 222, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strHighscores, 34, Color.Black, 33, 223, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strHighscores, 34, Color.Black, 34, 224, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strHighscores, 34, Color.Black, 35, 225, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strHighscores, 34, Color.Red, 30, 220, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT)
 
         'Check if Access
         If blnHighscoresIsAccess Then
@@ -2762,21 +2798,18 @@ Public Class frmGame
 
     Private Sub CreditsScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw credits background
-        gGraphics.DrawImageUnscaled(btmCreditsBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmCreditsBackgroundMemory, pntTopLeft)
 
         'Draw credit pictures
         If btmJohnGonzales IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmJohnGonzales, pntJohnGonzales)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmJohnGonzales, pntJohnGonzales)
         End If
         If btmZacharyStafford IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmZacharyStafford, pntZacharyStafford)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmZacharyStafford, pntZacharyStafford)
         End If
         If btmCoryLewis IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmCoryLewis, pntCoryLewis)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmCoryLewis, pntCoryLewis)
         End If
 
         'Show back button or hover back button
@@ -2786,11 +2819,8 @@ Public Class frmGame
 
     Private Sub VersusScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw background
-        gGraphics.DrawImageUnscaled(btmVersusBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusBackgroundMemory, pntTopLeft)
 
         'Show back button or hover back button
         ShowBackButtonOrHoverBackButton()
@@ -2799,73 +2829,60 @@ Public Class frmGame
         Select Case intCanvasVersusShow
             Case 0 'Nickname
                 'Draw host button
-                gGraphics.DrawImageUnscaled(btmVersusHostTextMemory, pntVersusHost)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusHostTextMemory, pntVersusHost)
                 'Draw or
-                gGraphics.DrawImageUnscaled(btmVersusOrTextMemory, pntVersusOr)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusOrTextMemory, pntVersusOr)
                 'Draw join button
-                gGraphics.DrawImageUnscaled(btmVersusJoinTextMemory, pntVersusJoin)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusJoinTextMemory, pntVersusJoin)
                 'Draw nickname
-                gGraphics.DrawImageUnscaled(btmVersusNicknameTextMemory, pntVersusBlackOutline)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusNickNameTextMemory, pntVersusBlackOutline)
                 'Draw player name text
-                DrawText(gGraphics, strNickName, 110, Color.White, 103, 350, 1500, 275)
+                DrawText(Graphics.FromImage(btmCanvas), strNickName, 110, Color.White, 103, 350, 1500, 275)
             Case 1 'Host
                 'Draw hosting text
-                DrawText(gGraphics, "Hosting...", 72, Color.Red, 600, 450, 1000, 150)
+                DrawText(Graphics.FromImage(btmCanvas), "Hosting...", 72, Color.Red, 600, 450, 1000, 150)
             Case 2 'Join
                 'Draw IP address
-                gGraphics.DrawImageUnscaled(btmVersusIPAddressTextMemory, pntVersusBlackOutline)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusIPAddressTextMemory, pntVersusBlackOutline)
                 'Draw IP address to type
-                DrawText(gGraphics, strIPAddressConnect, 110, Color.White, 103, 350, 1500, 275)
+                DrawText(Graphics.FromImage(btmCanvas), strIPAddressConnect, 110, Color.White, 103, 350, 1500, 275)
                 'Draw connect button
-                gGraphics.DrawImageUnscaled(btmVersusConnectTextMemory, pntVersusConnect)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusConnectTextMemory, pntVersusConnect)
             Case 3 'Connecting
                 'Draw connecting text
-                DrawText(gGraphics, "Connecting...", 72, Color.Red, 500, 450, 1000, 150)
+                DrawText(Graphics.FromImage(btmCanvas), "Connecting...", 72, Color.Red, 500, 450, 1000, 150)
         End Select
 
         'Draw ip address text
-        DrawText(gGraphics, strIPAddress, 72, Color.Red, 15, 25, 1000, 150)
+        DrawText(Graphics.FromImage(btmCanvas), strIPAddress, 72, Color.Red, 15, 25, 1000, 150)
 
         'Draw port forwarding
-        DrawText(gGraphics, "Router port forwarding: 10101", 50, Color.White, 375, 875, 1200, 125)
-
-    End Sub
-
-    Private Sub DrawText(gGraphicsDevice As Graphics, strText As String, sngFontSize As Single, colColor As Color, sngX As Single, sngY As Single,
-                         sngWidth As Single, sngHeight As Single)
-
-        'Draw text
-        Dim myFont As New Font("SketchFlow Print", sngFontSize, FontStyle.Regular)
-        Dim myBrush As New System.Drawing.SolidBrush(colColor)
-        gGraphics.DrawString(strText, myFont, myBrush, New RectangleF(sngX, sngY, sngWidth, sngHeight))
+        DrawText(Graphics.FromImage(btmCanvas), "Router port forwarding: 10101", 50, Color.White, 375, 875, 1200, 125)
 
     End Sub
 
     Private Sub LoadingVersusConnectedScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw loading background
-        gGraphics.DrawImageUnscaled(btmLoadingBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingBackgroundMemory, pntTopLeft)
 
         'Draw loading bar
-        gGraphics.DrawImageUnscaled(btmLoadingBar, pntLoadingBar)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingBar, pntLoadingBar)
 
         'Draw loading, waiting, and start text
         If blnWaiting Then
-            gGraphics.DrawImageUnscaled(btmLoadingWaitingTextMemory, pntLoadingWaitingText)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingWaitingTextMemory, pntLoadingWaitingText)
         Else
             If intCanvasShow = 0 And intCanvasMode = 7 Then
-                gGraphics.DrawImageUnscaled(btmLoadingTextMemory, pntLoadingText)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingTextMemory, pntLoadingText)
             Else
-                gGraphics.DrawImageUnscaled(btmLoadingStartTextMemory, pntLoadingStartText)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingStartTextMemory, pntLoadingStartText)
             End If
         End If
 
         'Draw paragraph
         If btmLoadingParagraphVersus IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmLoadingParagraphVersus, pntLoadingParagraph)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmLoadingParagraphVersus, pntLoadingParagraph)
         End If
 
     End Sub
@@ -2875,18 +2892,15 @@ Public Class frmGame
         'Check if black screen displayed
         If blnBlackScreenFinished Then
 
-            'Paint on the canvas
-            PaintOnBitmap(btmCanvas)
-
             'Show death overlay
-            gGraphics.DrawImageUnscaled(btmDeathScreen, pntTopLeft)
-            gGraphics.DrawImageUnscaled(btmVersusWhoWon, pntTopLeft)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmDeathScreen, pntTopLeft)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmVersusWhoWon, pntTopLeft)
 
             'Draw stats
             If blnHost Then
-                DrawStats(gGraphics, intZombieKillsOne, intReloadTimes)
+                DrawStats(intZombieKillsOne, intReloadTimes)
             Else
-                DrawStats(gGraphics, intZombieKillsTwo, intReloadTimes)
+                DrawStats(intZombieKillsTwo, intReloadTimes)
             End If
 
             'Remove objects only once
@@ -2910,9 +2924,6 @@ Public Class frmGame
     End Sub
 
     Private Sub PlayMultiplayerGame()
-
-        'Paint on copy of the background
-        PaintOnBitmap(btmGameBackgroundMemory)
 
         'Draw dead zombies permanently for hoster
         DrawDeadZombiesPermanently(gaudcZombiesOne, intZombieKillsOne)
@@ -2970,13 +2981,13 @@ Public Class frmGame
         End If
 
         'Draw character hoster
-        gGraphics.DrawImageUnscaled(udcCharacterOne.CharacterImage, udcCharacterOne.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterOne.CharacterImage, udcCharacterOne.CharacterPoint)
 
         'Draw first zombies
         DrawMultiplayerZombiesAndSendData(gaudcZombiesOne, ZOMBIE_PINNING_X_DISTANCE, 7)
 
         'Draw character joiner
-        gGraphics.DrawImageUnscaled(udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
 
         'Draw second zombies
         DrawMultiplayerZombiesAndSendData(gaudcZombiesTwo, ZOMBIE_PINNING_X_DISTANCE + 100, 8)
@@ -2985,34 +2996,34 @@ Public Class frmGame
         gSendData(3, strGetXPositionsOfZombies())
 
         'Draw text in the word bar
-        DrawText(gGraphics, strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
-        DrawText(gGraphics, strTheWord, 50, Color.Black, 528, 93, 1000, 100) 'Shadow
-        DrawText(gGraphics, strTheWord, 50, Color.White, 525, 90, 1000, 100) 'White text
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 528, 93, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.White, 525, 90, 1000, 100) 'White text
 
         'Word overlay
         If blnHost Then
-            DrawText(gGraphics, strTheWord.Substring(0, intWordIndex), 50, Color.Red, 525, 90, 1000, 100) 'Overlay
+            DrawText(Graphics.FromImage(btmCanvas), strTheWord.Substring(0, intWordIndex), 50, Color.Red, 525, 90, 1000, 100) 'Overlay
         Else
-            DrawText(gGraphics, strTheWord.Substring(0, intWordIndex), 50, Color.Blue, 525, 90, 1000, 100) 'Overlay
+            DrawText(Graphics.FromImage(btmCanvas), strTheWord.Substring(0, intWordIndex), 50, Color.Blue, 525, 90, 1000, 100) 'Overlay
         End If
 
         'Show magazine with bullet count
-        gGraphics.DrawImageUnscaled(btmAK47MagazineMemory, pntAK47Magazine)
+        Graphics.FromImage(btmCanvas).DrawImageUnscaled(btmAK47MagazineMemory, pntAK47Magazine)
 
         'Draw nickname
         If blnHost Then
-            DrawText(gGraphics, strNickName, 36, Color.Red, 90, 205, 1000, 150) 'Host sees own name
-            DrawText(gGraphics, strNickNameConnected, 36, Color.Blue, 200, 255, 1000, 150) 'Host sees joiner name
+            DrawText(Graphics.FromImage(btmCanvas), strNickName, 36, Color.Red, 90, 205, 1000, 150) 'Host sees own name
+            DrawText(Graphics.FromImage(btmCanvas), strNickNameConnected, 36, Color.Blue, 200, 255, 1000, 150) 'Host sees joiner name
         Else
-            DrawText(gGraphics, strNickNameConnected, 36, Color.Red, 90, 205, 1000, 150) 'Joiner sees host name
-            DrawText(gGraphics, strNickName, 36, Color.Blue, 200, 255, 1000, 150) 'Joiner sees own name
+            DrawText(Graphics.FromImage(btmCanvas), strNickNameConnected, 36, Color.Red, 90, 205, 1000, 150) 'Joiner sees host name
+            DrawText(Graphics.FromImage(btmCanvas), strNickName, 36, Color.Blue, 200, 255, 1000, 150) 'Joiner sees own name
         End If
 
         'Draw bullet count on magazine
         If blnHost Then
-            DrawText(gGraphics, CStr(30 - udcCharacterOne.BulletsUsed), 40, Color.Red, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
+            DrawText(Graphics.FromImage(btmCanvas), CStr(30 - udcCharacterOne.BulletsUsed), 40, Color.Red, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
         Else
-            DrawText(gGraphics, CStr(30 - udcCharacterTwo.BulletsUsed), 40, Color.Blue, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
+            DrawText(Graphics.FromImage(btmCanvas), CStr(30 - udcCharacterTwo.BulletsUsed), 40, Color.Blue, pntAK47Magazine.X - 15, pntAK47Magazine.Y + 50, 100, 75)
         End If
 
         'Check if need to black screen
@@ -3039,7 +3050,7 @@ Public Class frmGame
                     End If
             End Select
             'Paint black overlay
-            gGraphics.DrawImageUnscaled(btmBlackScreen, pntTopLeft)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmBlackScreen, pntTopLeft)
         End If
 
         'Make copy if died
@@ -3205,7 +3216,7 @@ Public Class frmGame
                     End If
                 End If
                 'Draw zombies dying, pinning or walking
-                gGraphics.DrawImageUnscaled(audcZombiesType(intLoop).ZombieImage, audcZombiesType(intLoop).ZombiePoint)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), audcZombiesType(intLoop).ZombieImage, audcZombiesType(intLoop).ZombiePoint)
             End If
         Next
 
@@ -3213,15 +3224,12 @@ Public Class frmGame
 
     Private Sub StoryScreen()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw story background
-        gGraphics.DrawImageUnscaled(btmStoryBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStoryBackgroundMemory, pntTopLeft)
 
         'Draw story text
         If btmStoryParagraph IsNot Nothing Then
-            gGraphics.DrawImageUnscaled(btmStoryParagraph, pntStoryParagraph)
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmStoryParagraph, pntStoryParagraph)
         End If
 
         'Show back button or hover back button
@@ -3346,11 +3354,8 @@ Public Class frmGame
 
     Private Sub GameVersionMismatch()
 
-        'Paint on canvas
-        PaintOnBitmap(btmCanvas)
-
         'Draw story background
-        gGraphics.DrawImageUnscaled(btmGameMismatchBackgroundMemory, pntTopLeft)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmGameMismatchBackgroundMemory, pntTopLeft)
 
         'Display
         MismatchingText("Your version: " & GAME_VERSION, 878, 197)
@@ -3367,9 +3372,9 @@ Public Class frmGame
     Private Sub MismatchingText(strText As String, intX As Integer, intY As Integer)
 
         'Draw text
-        DrawText(gGraphics, strText, 50, Color.Black, intX, intY, 1000, 100) 'Shadow
-        DrawText(gGraphics, strText, 50, Color.Black, intX + 2, intY + 2, 1000, 100) 'Shadow
-        DrawText(gGraphics, strText, 50, Color.Red, intX - 2, intY - 2, 1000, 100)
+        DrawText(Graphics.FromImage(btmCanvas), strText, 50, Color.Black, intX, intY, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 50, Color.Black, intX + 2, intY + 2, 1000, 100) 'Shadow
+        DrawText(Graphics.FromImage(btmCanvas), strText, 50, Color.Red, intX - 2, intY - 2, 1000, 100)
 
     End Sub
 
@@ -4592,28 +4597,41 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub CopyBitmapIntoMemoryAfterDrawingScreen(ByRef btmByRefFile As Bitmap, ByRef btmByRefMemory As Bitmap, ByRef blnByRefMemoryCopied As Boolean)
+    Private Sub CopyBitmapIntoMemoryAfterDrawingScreen(ByRef btmByRefBitmapFile As Bitmap, ByRef btmByRefBitmapMemory As Bitmap,
+                                                       ByRef blnByRefBitmapMemoryCopied As Boolean)
 
         'Load bitmap into memory, see if file was loaded and if haven't already loaded into memory
-        If btmByRefFile IsNot Nothing And Not blnByRefMemoryCopied Then
+        If btmByRefBitmapFile IsNot Nothing And Not blnByRefBitmapMemoryCopied Then
+
             'Declare
-            btmByRefMemory = New Bitmap(btmByRefFile.Width, btmByRefFile.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb)
+            Dim intWidthFile As Integer = btmByRefBitmapFile.Width
+            Dim intHeightFile As Integer = btmByRefBitmapFile.Height
+
+            'Make new memory picture
+            btmByRefBitmapMemory = New Bitmap(intWidthFile, intHeightFile, Imaging.PixelFormat.Format32bppPArgb)
+
             'Memory copy
-            PaintOnBitmap(btmByRefMemory)
-            'Draw
-            gGraphics.DrawImageUnscaled(btmByRefFile, 0, 0)
+            DrawGraphicsByPoint(Graphics.FromImage(btmByRefBitmapMemory), btmByRefBitmapFile, pntTopLeft)
+
             'Dispose file lock
-            btmByRefFile.Dispose()
+            btmByRefBitmapFile.Dispose()
+
             'Set
-            blnByRefMemoryCopied = True
+            blnByRefBitmapMemoryCopied = True
+
             'Restart loading game thread
             RestartLoadingGame(True)
+
         Else
+
             'Check to see if it was already copied
-            If blnByRefMemoryCopied Then
+            If blnByRefBitmapMemoryCopied Then
+
                 'Restart loading game thread
                 RestartLoadingGame(True)
+
             End If
+
         End If
 
     End Sub
@@ -4628,21 +4646,23 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub CopyLevelBitmap(ByRef btmByRefMemory As Bitmap, btmMemoryToCopy As Bitmap)
+    Private Sub CopyLevelBitmap(ByRef btmByRefBitmapMemory As Bitmap, btmBitmapMemoryToCopy As Bitmap)
 
         'Dispose old
-        If btmByRefMemory IsNot Nothing Then
-            btmByRefMemory.Dispose()
+        If btmByRefBitmapMemory IsNot Nothing Then
+            btmByRefBitmapMemory.Dispose()
+            btmByRefBitmapMemory = Nothing
         End If
 
         'Declare
-        btmByRefMemory = New Bitmap(btmMemoryToCopy.Width, btmMemoryToCopy.Height, System.Drawing.Imaging.PixelFormat.Format32bppPArgb)
+        Dim intWidthToCopy As Integer = btmBitmapMemoryToCopy.Width
+        Dim intHeightToCopy As Integer = btmBitmapMemoryToCopy.Height
+
+        'Make new memory picture
+        btmByRefBitmapMemory = New Bitmap(intWidthToCopy, intHeightToCopy, Imaging.PixelFormat.Format32bppPArgb)
 
         'Memory copy
-        PaintOnBitmap(btmByRefMemory)
-
-        'Draw
-        gGraphics.DrawImageUnscaled(btmMemoryToCopy, 0, 0)
+        DrawGraphicsByPoint(Graphics.FromImage(btmByRefBitmapMemory), btmBitmapMemoryToCopy, pntTopLeft)
 
     End Sub
 
