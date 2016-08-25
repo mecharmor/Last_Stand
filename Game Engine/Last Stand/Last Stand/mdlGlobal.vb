@@ -100,8 +100,8 @@ Module mdlGlobal
         For intLoop As Integer = 0 To audcZombiesType.GetUpperBound(0)
             'Check if spawned
             If audcZombiesType(intLoop).Spawned Then
-                'Check if not marked to die
-                If Not audcZombiesType(intLoop).MarkedToDie Then
+                'Check if not dying
+                If Not audcZombiesType(intLoop).IsDying Then
                     audcZombiesType(intLoop).ZombiePoint = New Point(audcZombiesType(intLoop).ZombiePoint.X - gCHARACTER_MOVEMENT_SPEED,
                                                            audcZombiesType(intLoop).ZombiePoint.Y)
                 End If

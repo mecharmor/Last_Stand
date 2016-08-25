@@ -38,12 +38,10 @@ Public Class clsZombie
     Private thrAnimating As System.Threading.Thread
 
     'Dying
-    Private blnMarkedToDie As Boolean = False
     Private blnIsDying As Boolean = False
 
     'Pinning
     Private blnIsPinning As Boolean = False
-    Private intPinXYValueChanged As Integer = 0
 
     'Dead for painting on background
     Private blnDead As Boolean = False
@@ -345,20 +343,6 @@ Public Class clsZombie
 
     End Property
 
-    Public Property PinXYValueChanged() As Integer
-
-        'Return
-        Get
-            Return intPinXYValueChanged
-        End Get
-
-        'Set
-        Set(value As Integer)
-            intPinXYValueChanged = value
-        End Set
-
-    End Property
-
     Public ReadOnly Property IsPinning() As Boolean
 
         'Return
@@ -374,22 +358,6 @@ Public Class clsZombie
         Get
             Return blnIsDying
         End Get
-
-    End Property
-
-    Public Property MarkedToDie() As Boolean
-
-        'Notes: This zombie will only die after being rendered through the render thread.
-
-        'Return
-        Get
-            Return blnMarkedToDie
-        End Get
-
-        'Set
-        Set(value As Boolean)
-            blnMarkedToDie = value
-        End Set
 
     End Property
 
