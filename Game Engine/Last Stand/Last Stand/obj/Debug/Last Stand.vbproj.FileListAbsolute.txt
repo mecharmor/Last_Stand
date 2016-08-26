@@ -245,7 +245,3 @@ F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\bin\Debug\Last Sta
 F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last_Stand.frmGame.resources
 F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last_Stand.Resources.resources
 F:\Programming\Game Engine\Perfect Work\Last Stand\Last Stand\obj\Debug\Last Stand.vbproj.GenerateResource.Cache
-C:\Users\ZACKOX\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\bin\Debug\Last Stand.exe.config
-C:\Users\ZACKOX\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.exe
-C:\Users\ZACKOX\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.xml
-C:\Users\ZACKOX\Documents\GitHub\Last_Stand\Game Engine\Last Stand\Last Stand\obj\Debug\Last Stand.pdb

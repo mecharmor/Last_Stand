@@ -28,8 +28,8 @@ Public Class clsZombie
     Private blnThreadDisposing As Boolean = False
 
     'Bitmaps
-    Private btmZombie As Bitmap
-    Private pntZombie As Point
+    Private btmImage As Bitmap
+    Private pntPoint As Point
 
     'Thread
     Private thrAnimating As System.Threading.Thread
@@ -67,17 +67,17 @@ Public Class clsZombie
         'Set animation
         Select Case _strThisObjectNameCorrespondingToCharacter
             Case "udcCharacter"
-                btmZombie = gabtmZombieWalkMemories(0)
+                btmImage = gabtmZombieWalkMemories(0)
             Case "udcCharacterOne"
-                btmZombie = gabtmZombieWalkRedMemories(0)
+                btmImage = gabtmZombieWalkRedMemories(0)
             Case "udcCharacterTwo"
-                btmZombie = gabtmZombieWalkBlueMemories(0)
+                btmImage = gabtmZombieWalkBlueMemories(0)
         End Select
 
         'Set
         intSpotX = intSpawnX
         intSpotY = intSpawnY
-        pntZombie = New Point(intSpotX, intSpotY)
+        pntPoint = New Point(intSpotX, intSpotY)
 
         'Set timer
         tmrAnimation.AutoReset = True
@@ -113,11 +113,11 @@ Public Class clsZombie
         'Preset
         Select Case _strThisObjectNameCorrespondingToCharacter
             Case "udcCharacter"
-                btmZombie = btmZombiePicture
+                btmImage = btmZombiePicture
             Case "udcCharacterOne"
-                btmZombie = btmZombiePictureRed
+                btmImage = btmZombiePictureRed
             Case "udcCharacterTwo"
-                btmZombie = btmZombiePictureBlue
+                btmImage = btmZombiePictureBlue
         End Select
 
     End Sub
@@ -150,25 +150,25 @@ Public Class clsZombie
 
     End Property
 
-    Public ReadOnly Property ZombieImage() As Bitmap
+    Public ReadOnly Property Image() As Bitmap
 
         'Return
         Get
-            Return btmZombie
+            Return btmImage
         End Get
 
     End Property
 
-    Public Property ZombiePoint() As Point
+    Public Property Point() As Point
 
         'Return
         Get
-            Return pntZombie
+            Return pntPoint
         End Get
 
         'Set
         Set(value As Point)
-            pntZombie = value
+            pntPoint = value
         End Set
 
     End Property
@@ -206,7 +206,7 @@ Public Class clsZombie
             Case 1 To 6
                 'Walking, change point, only change if not a ghost like property
                 If Not _blnImitation Then
-                    pntZombie.X -= _intSpeed 'Speed they come at
+                    pntPoint.X -= _intSpeed 'Speed they come at
                 End If
         End Select
 
@@ -296,20 +296,20 @@ Public Class clsZombie
             Case 1
                 Select Case _strThisObjectNameCorrespondingToCharacter
                     Case "udcCharacter"
-                        btmZombie = gabtmZombieDeath1Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeath1Memories(intZombieDeathIndex)
                     Case "udcCharacterOne"
-                        btmZombie = gabtmZombieDeathRed1Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeathRed1Memories(intZombieDeathIndex)
                     Case "udcCharacterTwo"
-                        btmZombie = gabtmZombieDeathBlue1Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeathBlue1Memories(intZombieDeathIndex)
                 End Select
             Case 2
                 Select Case _strThisObjectNameCorrespondingToCharacter
                     Case "udcCharacter"
-                        btmZombie = gabtmZombieDeath2Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeath2Memories(intZombieDeathIndex)
                     Case "udcCharacterOne"
-                        btmZombie = gabtmZombieDeathRed2Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeathRed2Memories(intZombieDeathIndex)
                     Case "udcCharacterTwo"
-                        btmZombie = gabtmZombieDeathBlue2Memories(intZombieDeathIndex)
+                        btmImage = gabtmZombieDeathBlue2Memories(intZombieDeathIndex)
                 End Select
         End Select
 

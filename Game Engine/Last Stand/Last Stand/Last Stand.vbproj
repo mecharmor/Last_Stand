@@ -70,6 +70,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="clsChainedZombie.vb" />
     <Compile Include="clsCharacter.vb" />
     <Compile Include="clsHelicopter.vb" />
     <Compile Include="clsSound.vb" />

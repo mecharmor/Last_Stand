@@ -54,8 +54,8 @@ Public Class clsCharacter
     Private blnThreadDisposing As Boolean = False
 
     'Bitmaps
-    Private btmCharacter As Bitmap
-    Private pntCharacter As Point
+    Private btmImage As Bitmap
+    Private pntPoint As Point
 
     'Thread
     Private thrAnimating As System.Threading.Thread
@@ -109,7 +109,7 @@ Public Class clsCharacter
         'Set
         intSpotX = intSpawnX
         intSpotY = intSpawnY
-        pntCharacter = New Point(intSpotX, intSpotY)
+        pntPoint = New Point(intSpotX, intSpotY)
 
         'Set timer
         tmrAnimation.AutoReset = True
@@ -149,11 +149,11 @@ Public Class clsCharacter
         'Set picture
         Select Case _strThisObjectName
             Case "udcCharacter"
-                btmCharacter = btmCharacterPicture
+                btmImage = btmCharacterPicture
             Case "udcCharacterOne"
-                btmCharacter = btmCharacterPictureRed
+                btmImage = btmCharacterPictureRed
             Case "udcCharacterTwo"
-                btmCharacter = btmCharacterPictureBlue
+                btmImage = btmCharacterPictureBlue
         End Select
 
     End Sub
@@ -186,20 +186,20 @@ Public Class clsCharacter
 
     End Property
 
-    Public ReadOnly Property CharacterImage() As Bitmap
+    Public ReadOnly Property Image() As Bitmap
 
         'Return
         Get
-            Return btmCharacter
+            Return btmImage
         End Get
 
     End Property
 
-    Public ReadOnly Property CharacterPoint() As Point
+    Public ReadOnly Property Point() As Point
 
         'Return
         Get
-            Return pntCharacter
+            Return pntPoint
         End Get
 
     End Property
@@ -259,7 +259,7 @@ Public Class clsCharacter
                 SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
                                                        gabtmCharacterStandBlueMemories(0))
                 'Default
-                pntCharacter.X = intSpotX
+                pntPoint.X = intSpotX
 
             Case 6 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Not used here
@@ -272,11 +272,11 @@ Public Class clsCharacter
                 'Set picture
                 Select Case _strThisObjectName
                     Case "udcCharacter"
-                        btmCharacter = gabtmCharacterReloadMemories(intFrame - 7)
+                        btmImage = gabtmCharacterReloadMemories(intFrame - 7)
                     Case "udcCharacterOne"
-                        btmCharacter = gabtmCharacterReloadRedMemories(intFrame - 7)
+                        btmImage = gabtmCharacterReloadRedMemories(intFrame - 7)
                     Case "udcCharacterTwo"
-                        btmCharacter = gabtmCharacterReloadBlueMemories(intFrame - 7)
+                        btmImage = gabtmCharacterReloadBlueMemories(intFrame - 7)
                 End Select
 
             Case 27 'Reloading, delay here is CHARACTER_RELOAD_DELAY
@@ -299,14 +299,14 @@ Public Class clsCharacter
                 'Set picture
                 Select Case _strThisObjectName
                     Case "udcCharacter"
-                        btmCharacter = gabtmCharacterRunningMemories(intFrame - 29) '30-29 = 1 in the array
+                        btmImage = gabtmCharacterRunningMemories(intFrame - 29) '30-29 = 1 in the array
                     Case "udcCharacterOne"
-                        btmCharacter = Nothing
+                        btmImage = Nothing
                     Case "udcCharacterTwo"
-                        btmCharacter = Nothing
+                        btmImage = Nothing
                 End Select
                 'Move point
-                pntCharacter.X = -CHARACTER_RESET_POINT
+                pntPoint.X = -CHARACTER_RESET_POINT
                 'Move game background
                 gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED
                 'Move zombies
@@ -352,7 +352,7 @@ Public Class clsCharacter
                                                gabtmCharacterStandBlueMemories(0))
 
         'Default
-        pntCharacter.X = intSpotX
+        pntPoint.X = intSpotX
 
     End Sub
 
@@ -376,7 +376,7 @@ Public Class clsCharacter
                                                gabtmCharacterShootBlueMemories(0))
 
         'Default
-        pntCharacter.X = intSpotX
+        pntPoint.X = intSpotX
 
         'Change status and interval
         ChangeStatusAndInterval(CHARACTER_SHOOT_DELAY)
@@ -420,7 +420,7 @@ Public Class clsCharacter
                                                gabtmCharacterReloadBlueMemories(0))
 
         'Default
-        pntCharacter.X = intSpotX
+        pntPoint.X = intSpotX
 
         'Change status and interval
         ChangeStatusAndInterval(CHARACTER_RELOAD_DELAY)
@@ -446,7 +446,7 @@ Public Class clsCharacter
         SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gabtmCharacterRunningMemories(0))
 
         'Move point
-        pntCharacter.X = -CHARACTER_RESET_POINT
+        pntPoint.X = -CHARACTER_RESET_POINT
 
         'Move game background
         gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED

@@ -3,17 +3,14 @@ Option Explicit On
 Option Strict On
 Option Infer Off
 
-Public Class clsHelicopter
+Public Class clsChainedZombie
 
     'Constant
-    Private Const HELICOPTER_ROTATINGBLADE_DELAY As Integer = 120
+    Private Const ZOMBIE_ANIMATION_DELAY As Integer = 150
 
     'Declare
     Private _frmToPass As Form
     Private intFrame As Integer = 1
-
-    'Sound
-    Private _udcRotatingBladeSound As clsSound
 
     'Ending thread
     Private blnThreadDisposing As Boolean = False
@@ -28,22 +25,16 @@ Public Class clsHelicopter
     'Timer
     Private tmrAnimation As New System.Timers.Timer
 
-    Public Sub New(frmToPass As Form, udcRotatingBladeSound As clsSound, Optional blnStartAnimation As Boolean = False)
+    Public Sub New(frmToPass As Form, intSpawnX As Integer, intSpawnY As Integer, Optional blnStartAnimation As Boolean = False)
 
         'Set
         _frmToPass = frmToPass
 
         'Set animation
-        btmImage = gabtmHelicopterMemories(0)
+        btmImage = gabtmChainedZombieMemories(0)
 
         'Set
-        pntPoint = New Point(2879, 0)
-
-        'Set sound
-        _udcRotatingBladeSound = udcRotatingBladeSound
-
-        'Start the sound in a loop
-        _udcRotatingBladeSound.PlaySound(gintSoundVolume, True)
+        pntPoint = New Point(intSpawnX, intSpawnY)
 
         'Set timer
         tmrAnimation.AutoReset = True
@@ -72,7 +63,7 @@ Public Class clsHelicopter
     End Sub
 
 
-    Public Sub Start(Optional intAnimatingDelay As Integer = HELICOPTER_ROTATINGBLADE_DELAY)
+    Public Sub Start(Optional intAnimatingDelay As Integer = ZOMBIE_ANIMATION_DELAY)
 
         'Set timer delay
         tmrAnimation.Interval = CDbl(intAnimatingDelay)
@@ -114,22 +105,16 @@ Public Class clsHelicopter
         'Check the frame
         Select Case intFrame
             Case 1
-                btmImage = gabtmHelicopterMemories(1)
+                btmImage = gabtmChainedZombieMemories(1)
             Case 2
-                btmImage = gabtmHelicopterMemories(2)
-            Case 3
-                btmImage = gabtmHelicopterMemories(3)
-            Case 4
-                btmImage = gabtmHelicopterMemories(4)
-            Case 5
-                btmImage = gabtmHelicopterMemories(0)
+                btmImage = gabtmChainedZombieMemories(2)
         End Select
 
         'Increase frame
         intFrame += 1
 
         'Check frame
-        If intFrame = 6 Then
+        If intFrame = 3 Then
             intFrame = 1
         End If
 

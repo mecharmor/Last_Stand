@@ -48,13 +48,19 @@ Module mdlGlobal
     Public gabtmZombieDeathBlue2Memories(5) As Bitmap
     Public gabtmZombiePinBlueMemories(1) As Bitmap
 
+    'Chained zombie memory for class file
+    Public gabtmChainedZombieMemories(2) As Bitmap
+
+    'Helicopter
+    Public gabtmHelicopterMemories(4) As Bitmap
+
     'Zombies class, must be public because used in multiple threads of other classes, game movement with zombies moving
     Public gaudcZombies() As clsZombie
     Public gaudcZombiesOne() As clsZombie
     Public gaudcZombiesTwo() As clsZombie
 
-    'Helicopter
-    Public gabtmHelicopterMemories(4) As Bitmap
+    'Chained zombie class, must be public because used in multiple threads of other classes, game movement with zombies moving
+    Public gudcChainedZombie As clsChainedZombie
 
     'Multiplayer versus
     Public gswClientData As IO.StreamWriter
@@ -101,10 +107,15 @@ Module mdlGlobal
             'Check if spawned
             If audcZombiesType(intLoop).Spawned Then
                 'Set new point so that the zombie is moving
-                audcZombiesType(intLoop).ZombiePoint = New Point(audcZombiesType(intLoop).ZombiePoint.X - gCHARACTER_MOVEMENT_SPEED,
-                                                       audcZombiesType(intLoop).ZombiePoint.Y)
+                audcZombiesType(intLoop).Point = New Point(audcZombiesType(intLoop).Point.X - gCHARACTER_MOVEMENT_SPEED, audcZombiesType(intLoop).Point.Y)
             End If
         Next
+
+        'Move chained zombie
+        If gudcChainedZombie IsNot Nothing Then
+            'Set new point so that the zombie is moving
+            gudcChainedZombie.Point = New Point(gudcChainedZombie.Point.X - gCHARACTER_MOVEMENT_SPEED, gudcChainedZombie.Point.Y)
+        End If
 
     End Sub
 

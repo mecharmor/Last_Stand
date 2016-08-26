@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAME_VERSION As String = "1.51"
+    Private Const GAME_VERSION As String = "1.52"
     Private Const ORIGINAL_SCREEN_WIDTH As Integer = 1680
     Private Const ORIGINAL_SCREEN_HEIGHT As Integer = 1050
     Private Const WINDOW_MESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -239,6 +239,7 @@ Public Class frmGame
     Private udcButtonHoverSound As clsSound
     Private udcButtonPressedSound As clsSound
     Private audcStoryParagraphSounds(2) As clsSound '3 paragraph sounds in the story area
+    Private udcGameLoadedPressed As clsSound 'When game is loaded and pressing start
     Private audcGameBackgroundSounds(4) As clsSound '5 background sounds so far
     Private udcScreamSound As clsSound
     Private udcGunShotSound As clsSound
@@ -432,6 +433,10 @@ Public Class frmGame
     Private ablnZombieDeathBlue2MemoriesCopied(5) As Boolean
     Private abtmZombiePinBlueFiles(1) As Bitmap
     Private ablnZombiePinBlueMemoriesCopied(1) As Boolean
+
+    'Chained zombie bitmap load files
+    Private abtmChainedZombieFiles(2) As Bitmap
+    Private ablnChainedZombieMemoriesCopied(2) As Boolean
 
     'Helicopter bitmap load files
     Private abtmHelicopterFiles(4) As Bitmap
@@ -1009,6 +1014,12 @@ Public Class frmGame
             End If
         Next
 
+        'Loaded game press
+        If udcGameLoadedPressed IsNot Nothing Then
+            udcGameLoadedPressed.StopAndCloseSound()
+            udcGameLoadedPressed = Nothing
+        End If
+
         'Game backgrounds
         For intLoop As Integer = 0 To audcGameBackgroundSounds.GetUpperBound(0)
             If audcGameBackgroundSounds(intLoop) IsNot Nothing Then
@@ -1260,6 +1271,13 @@ Public Class frmGame
             udcHelicopter = Nothing
         End If
 
+        'Stop and dispose chained zombie
+        If gudcChainedZombie IsNot Nothing Then
+            'Stop and dispose
+            gudcChainedZombie.StopAndDispose()
+            gudcChainedZombie = Nothing
+        End If
+
         'Stop reloading sound
         If udcReloadingSound IsNot Nothing Then
             udcReloadingSound.StopSound()
@@ -1367,6 +1385,9 @@ Public Class frmGame
         For intLoop As Integer = 0 To audcStoryParagraphSounds.GetUpperBound(0)
             audcStoryParagraphSounds(intLoop) = New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\StoryParagraph" & CStr(intLoop + 1) & ".mp3", 1)
         Next
+
+        'Loaded game press
+        udcGameLoadedPressed = New clsSound(Me, AppDomain.CurrentDomain.BaseDirectory & "Sounds\GameLoadedPressed.mp3", 1)
 
     End Sub
 
@@ -1482,7 +1503,7 @@ Public Class frmGame
                         ChangeCanvasModeAndChangeCanvasShowAndPlayClickSound(3, 0, False)
                     Case 5
                         'Level helicopter escape
-                        NextLevel(abtmGameBackgroundMemories(4), True)
+                        NextLevel(abtmGameBackgroundMemories(4))
                         'Change level, reuse the mechanics
                         ChangeCanvasModeAndChangeCanvasShowAndPlayClickSound(3, 0, False)
                 End Select
@@ -1495,7 +1516,7 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub NextLevel(btmGameBackgroundLevel As Bitmap, Optional blnLoadHelicopter As Boolean = False)
+    Private Sub NextLevel(btmGameBackgroundLevel As Bitmap)
 
         'Set
         If btmDeathScreen IsNot Nothing Then
@@ -1540,11 +1561,17 @@ Public Class frmGame
         'Zombies
         LoadZombies("Level 1 Single Player")
 
-        'Helicopter
-        If blnLoadHelicopter Then
-            udcHelicopter = New clsHelicopter(Me, udcRotatingBladeSound)
-            udcHelicopter.Start()
-        End If
+        'Load into levels
+        Select Case intLevel
+            Case 2
+                'Chained zombie
+                gudcChainedZombie = New clsChainedZombie(Me, 2000, 0) 'Near the door
+                gudcChainedZombie.Start()
+            Case 5
+                'Helicopter
+                udcHelicopter = New clsHelicopter(Me, udcRotatingBladeSound)
+                udcHelicopter.Start()
+        End Select
 
         'Start character
         udcCharacter.Start()
@@ -1861,14 +1888,14 @@ Public Class frmGame
         'Check for helicopter
         If udcHelicopter IsNot Nothing Then
             'Draw
-            DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), udcHelicopter.HelicopterImage, udcHelicopter.HelicopterPoint)
+            DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), udcHelicopter.Image, udcHelicopter.Point)
         End If
 
         'Draw dead zombies permanently
         DrawDeadZombiesPermanently(gaudcZombies, intZombieKills)
 
-        'Paint on canvas, clone the only necessary spot of the background, and draw word bar
-        PaintOnCanvasCloneScreenAndDrawWordBar()
+        'Paint on canvas and clone the only necessary spot of the background
+        PaintOnCanvasAndCloneScreen()
 
         'Check if made it to the end of the level
         If gpntGameBackground.X <= -2750 Then
@@ -1911,7 +1938,7 @@ Public Class frmGame
         End If
 
         'Draw character
-        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacter.CharacterImage, udcCharacter.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacter.Image, udcCharacter.Point)
 
         'Draw zombies
         For intLoop As Integer = 0 To gaudcZombies.GetUpperBound(0)
@@ -1920,7 +1947,7 @@ Public Class frmGame
                 'Check if can pin
                 If Not gaudcZombies(intLoop).IsDying Then
                     'Check distance
-                    If gaudcZombies(intLoop).ZombiePoint.X <= ZOMBIE_PINNING_X_DISTANCE - intZombieIncreasedPinDistance And Not gaudcZombies(intLoop).IsPinning Then
+                    If gaudcZombies(intLoop).Point.X <= ZOMBIE_PINNING_X_DISTANCE - intZombieIncreasedPinDistance And Not gaudcZombies(intLoop).IsPinning Then
                         'Check if level not beat
                         If Not blnBeatLevel Then
                             'Increase distance
@@ -1957,9 +1984,18 @@ Public Class frmGame
                     End If
                 End If
                 'Draw zombies dying, pinning or walking
-                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), gaudcZombies(intLoop).ZombieImage, gaudcZombies(intLoop).ZombiePoint)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), gaudcZombies(intLoop).Image, gaudcZombies(intLoop).Point)
             End If
         Next
+
+        'Check for chained zombie
+        If gudcChainedZombie IsNot Nothing Then
+            'Draw
+            DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), gudcChainedZombie.Image, gudcChainedZombie.Point)
+        End If
+
+        'Draw word bar
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmWordBarMemory, pntWordBar)
 
         'Draw text in the word bar
         DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
@@ -2023,9 +2059,9 @@ Public Class frmGame
                 'Set
                 audcZombiesType(intLoop).Spawned = False
                 'Set
-                pntTemp = New Point(audcZombiesType(intLoop).ZombiePoint.X + CInt(Math.Abs(gpntGameBackground.X)), audcZombiesType(intLoop).ZombiePoint.Y)
+                pntTemp = New Point(audcZombiesType(intLoop).Point.X + CInt(Math.Abs(gpntGameBackground.X)), audcZombiesType(intLoop).Point.Y)
                 'Draw dead
-                DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), audcZombiesType(intLoop).ZombieImage, pntTemp)
+                DrawGraphicsByPoint(Graphics.FromImage(btmGameBackgroundMemory), audcZombiesType(intLoop).Image, pntTemp)
                 'Increase count
                 intByRefZombieKills += 1
                 'Start a new zombie
@@ -2035,7 +2071,7 @@ Public Class frmGame
 
     End Sub
 
-    Private Sub PaintOnCanvasCloneScreenAndDrawWordBar()
+    Private Sub PaintOnCanvasAndCloneScreen()
 
         'Declare
         Dim rectSource As New Rectangle(Math.Abs(gpntGameBackground.X), 0, ORIGINAL_SCREEN_WIDTH, ORIGINAL_SCREEN_HEIGHT)
@@ -2049,9 +2085,6 @@ Public Class frmGame
         'Dispose because clone just makes the picture expand with more data
         btmGameBackgroundCloneScreenShown.Dispose()
         btmGameBackgroundCloneScreenShown = Nothing
-
-        'Draw word bar
-        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmWordBarMemory, pntWordBar)
 
     End Sub
 
@@ -2302,9 +2335,9 @@ Public Class frmGame
         'Loop to get closest zombie
         For intLoop As Integer = 0 To audcZombie.GetUpperBound(0)
             'If spawned, if not dying, and if closest point is less than another point
-            If audcZombie(intLoop).Spawned And Not audcZombie(intLoop).IsDying And intClosestX > audcZombie(intLoop).ZombiePoint.X Then
+            If audcZombie(intLoop).Spawned And Not audcZombie(intLoop).IsDying And intClosestX > audcZombie(intLoop).Point.X Then
                 'Set closest
-                intClosestX = audcZombie(intLoop).ZombiePoint.X
+                intClosestX = audcZombie(intLoop).Point.X
                 'Set index
                 intIndex = intLoop
             End If
@@ -2912,8 +2945,8 @@ Public Class frmGame
         'Draw dead zombies permanently for joiner
         DrawDeadZombiesPermanently(gaudcZombiesTwo, intZombieKillsTwo)
 
-        'Paint on canvas, clone the only necessary spot of the background, and draw word bar
-        PaintOnCanvasCloneScreenAndDrawWordBar()
+        'Paint on canvas and clone the only necessary spot of the background
+        PaintOnCanvasAndCloneScreen()
 
         'Check character status if not game over
         If Not blnPlayerWasPinned Then
@@ -2962,19 +2995,22 @@ Public Class frmGame
         End If
 
         'Draw character hoster
-        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterOne.CharacterImage, udcCharacterOne.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterOne.Image, udcCharacterOne.Point)
 
         'Draw first zombies
         DrawMultiplayerZombiesAndSendData(gaudcZombiesOne, ZOMBIE_PINNING_X_DISTANCE, intZombieIncreasedPinDistanceOne, 7)
 
         'Draw character joiner
-        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterTwo.CharacterImage, udcCharacterTwo.CharacterPoint)
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), udcCharacterTwo.Image, udcCharacterTwo.Point)
 
         'Draw second zombies
         DrawMultiplayerZombiesAndSendData(gaudcZombiesTwo, ZOMBIE_PINNING_X_DISTANCE + JOINER_ADDED_X_DISTANCE, intZombieIncreasedPinDistanceTwo, 8)
 
         'Send X Positions
         gSendData(3, strGetXPositionsOfZombies())
+
+        'Draw word bar
+        DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), btmWordBarMemory, pntWordBar)
 
         'Draw text in the word bar
         DrawText(Graphics.FromImage(btmCanvas), strTheWord, 50, Color.Black, 530, 95, 1000, 100) 'Shadow
@@ -3090,7 +3126,7 @@ Public Class frmGame
             'Check if spawned and alive
             If gaudcZombiesOne(intLoop).Spawned And Not gaudcZombiesOne(intLoop).IsDying Then
                 'Add onto the string
-                strReturn &= CStr(intLoop) & ":" & CStr(gaudcZombiesOne(intLoop).ZombiePoint.X) & ","
+                strReturn &= CStr(intLoop) & ":" & CStr(gaudcZombiesOne(intLoop).Point.X) & ","
             End If
         Next
 
@@ -3102,7 +3138,7 @@ Public Class frmGame
             'Check if spawned and alive
             If gaudcZombiesTwo(intLoop).Spawned And Not gaudcZombiesTwo(intLoop).IsDying Then
                 'Add onto the string
-                strReturn &= CStr(intLoop) & ":" & CStr(gaudcZombiesTwo(intLoop).ZombiePoint.X) & ","
+                strReturn &= CStr(intLoop) & ":" & CStr(gaudcZombiesTwo(intLoop).Point.X) & ","
             End If
         Next
 
@@ -3165,7 +3201,7 @@ Public Class frmGame
                 'Check if can pin
                 If Not audcZombiesType(intLoop).IsDying Then
                     'Check distance
-                    If audcZombiesType(intLoop).ZombiePoint.X <= intZombiePinningXDistance - intByRefZombieIncreasedPinDistance And
+                    If audcZombiesType(intLoop).Point.X <= intZombiePinningXDistance - intByRefZombieIncreasedPinDistance And
                     Not audcZombiesType(intLoop).IsPinning Then
                         'Increase pin distance
                         intByRefZombieIncreasedPinDistance += 25
@@ -3202,7 +3238,7 @@ Public Class frmGame
                     End If
                 End If
                 'Draw zombies dying, pinning or walking
-                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), audcZombiesType(intLoop).ZombieImage, audcZombiesType(intLoop).ZombiePoint)
+                DrawGraphicsByPoint(Graphics.FromImage(btmCanvas), audcZombiesType(intLoop).Image, audcZombiesType(intLoop).Point)
             End If
         Next
 
@@ -3710,7 +3746,7 @@ Public Class frmGame
         btmLoadingBar = abtmLoadingBarPictureMemories(1)
 
         'Check if previously loaded to the end
-        If intMemoryLoadPosition = 175 Then
+        If intMemoryLoadPosition = 178 Then
             intMemoryLoadPosition -= 1
         End If
 
@@ -4194,9 +4230,12 @@ Public Class frmGame
             Case 171 To 173
                 'File load array
                 LoadGameFileWithIndex(171, abtmPath2Files, ablnPath2MemoriesCopied, "Images\Game Play\Paths\Path 2\", ".jpg")
-            Case 174
+            Case 174 To 176
+                'File load array
+                LoadGameFileWithIndex(174, abtmChainedZombieFiles, ablnChainedZombieMemoriesCopied, "Images\ChainedZombie\", ".png")
+            Case 177
                 'Not used here, but below after graphics renders, skipped in the thread loading
-            Case 175 'Be careful changing this number, find = check if previously loaded to the end
+            Case 178 'Be careful changing this number, find = check if previously loaded to the end
                 'Check if single player
                 If Not blnGameIsVersus Then
                     'Character
@@ -4582,7 +4621,10 @@ Public Class frmGame
             Case 171 To 173
                 'Memory load array
                 CopyBitmapIntoMemoryAfterDrawingScreenWithIndex(171, abtmPath2Files, abtmPath2Memories, ablnPath2MemoriesCopied)
-            Case 174 'Be careful changing this number, find = check if previously loaded to the end
+            Case 174 To 176
+                'Memory load array
+                CopyBitmapIntoMemoryAfterDrawingScreenWithIndex(174, abtmChainedZombieFiles, gabtmChainedZombieMemories, ablnChainedZombieMemoriesCopied)
+            Case 177 'Be careful changing this number, find = check if previously loaded to the end
                 'Memory copy level
                 CopyLevelBitmap(btmGameBackgroundMemory, abtmGameBackgroundMemories(0))
                 '90% loaded
@@ -4853,6 +4895,8 @@ Public Class frmGame
 
         'Loading start text bar was clicked and game finished loading
         If blnFinishedLoading And blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+            'Play game loaded press sound
+            udcGameLoadedPressed.PlaySound(gintSoundVolume)
             'Set
             intCanvasMode = 3
             'Set
@@ -4957,6 +5001,8 @@ Public Class frmGame
         If blnHost Then
             'Start was clicked
             If Not blnWaiting And blnFinishedLoading And blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                'Play game loaded press sound
+                udcGameLoadedPressed.PlaySound(gintSoundVolume)
                 'Send playing
                 gSendData(2, strNickName)
                 'Start game locally
@@ -4970,6 +5016,8 @@ Public Class frmGame
         Else
             'Start was clicked
             If Not blnWaiting And blnFinishedLoading And blnMouseInRegion(pntMouse, 1613, 134, pntLoadingBar) Then
+                'Play game loaded press sound
+                udcGameLoadedPressed.PlaySound(gintSoundVolume)
                 'Send ready to play as joiner
                 gSendData(2, strNickName)
                 'Set
@@ -5774,8 +5822,7 @@ Public Class frmGame
             'Set x position of zombie
             If audcZombiesType IsNot Nothing Then
                 If audcZombiesType(intIndexOfZombies) IsNot Nothing Then
-                    audcZombiesType(intIndexOfZombies).ZombiePoint = New Point(intXPositionOfZombies,
-                                                                          audcZombiesType(intIndexOfZombies).ZombiePoint.Y)
+                    audcZombiesType(intIndexOfZombies).Point = New Point(intXPositionOfZombies, audcZombiesType(intIndexOfZombies).Point.Y)
                 End If
             End If
         Next
