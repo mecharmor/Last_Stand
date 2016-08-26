@@ -53,9 +53,6 @@ Public Class clsCharacter
     'Ending thread
     Private blnThreadDisposing As Boolean = False
 
-    'Avoid timer
-    Private blnAvoidTimer As Boolean = False
-
     'Bitmaps
     Private btmCharacter As Bitmap
     Private pntCharacter As Point
@@ -133,7 +130,7 @@ Public Class clsCharacter
         tmrAnimation.Enabled = False
 
         'Start thread
-        If Not blnAvoidTimer And Not blnThreadDisposing Then
+        If Not blnThreadDisposing Then
             thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
             thrAnimating.Start()
         End If
@@ -342,7 +339,7 @@ Public Class clsCharacter
         End Select
 
         'Enable timer, unless need to avoid or dispose
-        If Not blnAvoidTimer And Not blnThreadDisposing Then
+        If Not blnThreadDisposing Then
             tmrAnimation.Enabled = True
         End If
 

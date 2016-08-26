@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAME_VERSION As String = "1.50"
+    Private Const GAME_VERSION As String = "1.51"
     Private Const ORIGINAL_SCREEN_WIDTH As Integer = 1680
     Private Const ORIGINAL_SCREEN_HEIGHT As Integer = 1050
     Private Const WINDOW_MESSAGE_SYSTEM_COMMAND As Integer = 274

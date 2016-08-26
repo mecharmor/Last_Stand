@@ -27,9 +27,6 @@ Public Class clsZombie
     'Ending thread
     Private blnThreadDisposing As Boolean = False
 
-    'Avoid timer
-    Private blnAvoidTimer As Boolean = False
-
     'Bitmaps
     Private btmZombie As Bitmap
     Private pntZombie As Point
@@ -101,7 +98,7 @@ Public Class clsZombie
         tmrAnimation.Enabled = False
 
         'Start thread
-        If Not blnAvoidTimer And Not blnThreadDisposing Then
+        If Not blnThreadDisposing Then
             thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
             thrAnimating.Start()
         End If
@@ -266,7 +263,8 @@ Public Class clsZombie
                 blnDead = True
 
             Case 13 'Pinning, delay here is ZOMBIE_PINNING_DELAY
-                'Not used here
+                'Set frame and picture
+                SetFrameAndPicture(14, gabtmZombiePinMemories(0), gabtmZombiePinRedMemories(0), gabtmZombiePinBlueMemories(0)) 'Must be here, comes back in a cycle
 
             Case 14 'Pinning, delay here is ZOMBIE_PINNING_DELAY
                 'Set frame and picture
@@ -275,7 +273,7 @@ Public Class clsZombie
         End Select
 
         'Enable timer, unless dead, need to avoid, or dispose
-        If Not blnDead And Not blnAvoidTimer And Not blnThreadDisposing Then
+        If Not blnDead And Not blnThreadDisposing Then
             tmrAnimation.Enabled = True
         End If
 
