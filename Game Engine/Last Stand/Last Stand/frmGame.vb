@@ -6,7 +6,7 @@ Option Infer Off
 Public Class frmGame
 
     'Constants
-    Private Const GAME_VERSION As String = "1.49"
+    Private Const GAME_VERSION As String = "1.50"
     Private Const ORIGINAL_SCREEN_WIDTH As Integer = 1680
     Private Const ORIGINAL_SCREEN_HEIGHT As Integer = 1050
     Private Const WINDOW_MESSAGE_SYSTEM_COMMAND As Integer = 274
@@ -1935,6 +1935,7 @@ Public Class frmGame
                                 blnPreventKeyPressEvent = True
                                 'Stop character from moving
                                 If udcCharacter.StatusModeProcessing = clsCharacter.eintStatusMode.Run Then
+                                    'Stand
                                     udcCharacter.Stand()
                                 End If
                                 'Start black screen
@@ -2122,13 +2123,19 @@ Public Class frmGame
                             'Clear the key press buffer
                             strKeyPressBuffer = ""
                             'Make the character run
-                            udcCharacter.Run()
+                            udcCharacter.Run() 'Run now
 
                         Case clsCharacter.eintStatusMode.Reload
                             'Clear the key press buffer
                             strKeyPressBuffer = ""
                             'Make the character reload
-                            udcCharacter.Reload()
+                            If udcCharacter.StatusModeProcessing = clsCharacter.eintStatusMode.Run Then
+                                udcCharacter.Reload() 'While running, stop to reload immediately
+                            Else
+                                If udcCharacter.GetPictureFrame = 1 Then
+                                    udcCharacter.Reload() 'Only reload after finishing a gun shot frame
+                                End If
+                            End If
 
                         Case clsCharacter.eintStatusMode.Stand, clsCharacter.eintStatusMode.Shoot
                             'Make the character shoot with buffer
@@ -3130,10 +3137,13 @@ Public Class frmGame
                     Case clsCharacter.eintStatusMode.Reload
                         'Clear the key press buffer
                         strKeyPressBuffer = ""
-                        'Prepare to send data
-                        udcCharacterType.PrepareSendData = True 'This is for multiplayer reloading
-                        'Make the character reload
-                        udcCharacterType.Reload()
+                        'Make character reload
+                        If udcCharacterType.GetPictureFrame = 1 Then
+                            'Prepare to send data
+                            udcCharacterType.PrepareSendData = True 'This is for multiplayer reloading
+                            'Make the character reload
+                            udcCharacterType.Reload() 'Only reload after finishing a gun shot frame
+                        End If
 
                     Case clsCharacter.eintStatusMode.Stand, clsCharacter.eintStatusMode.Shoot
                         'Make the character shoot with buffer

@@ -139,17 +139,6 @@ Public Class clsZombie
 
     End Sub
 
-    Private Sub RestartAnimation(intAnimatingDelay As Integer)
-
-        'Set timer delay
-        tmrAnimation.Interval = CDbl(intAnimatingDelay)
-
-        'Start the animating thread
-        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-        thrAnimating.Start()
-
-    End Sub
-
     Public Property Spawned() As Boolean
 
         'Return
@@ -252,12 +241,7 @@ Public Class clsZombie
                 SetFrameAndPicture(1, gabtmZombieWalkMemories(1), gabtmZombieWalkRedMemories(1), gabtmZombieWalkBlueMemories(1))
 
             Case 7 'Dying, delay here is ZOMBIE_DYING_DELAY
-                'Declare
-                Dim rndNumber As New Random
-                'Set frame death
-                intFrameDeath = rndNumber.Next(1, 3)
-                'Set frame, frame death, and picture
-                SetFrameAndDeathPicture(8, 0)
+                'Not used here
 
             Case 8 'Dying, delay here is ZOMBIE_DYING_DELAY
                 'Set frame, frame death, and picture
@@ -282,8 +266,7 @@ Public Class clsZombie
                 blnDead = True
 
             Case 13 'Pinning, delay here is ZOMBIE_PINNING_DELAY
-                'Set frame and picture
-                SetFrameAndPicture(14, gabtmZombiePinMemories(0), gabtmZombiePinRedMemories(0), gabtmZombiePinBlueMemories(0))
+                'Not used here
 
             Case 14 'Pinning, delay here is ZOMBIE_PINNING_DELAY
                 'Set frame and picture
@@ -366,40 +349,33 @@ Public Class clsZombie
         'Set
         blnIsDying = True
 
-        'Sync to the new frame
-        SyncToNewFrame(7)
-
-        'Restart thread
-        RestartAnimation(ZOMBIE_DYING_DELAY)
-
         'Declare
         Dim rndNumber As New Random
+
+        'Set frame death
+        intFrameDeath = rndNumber.Next(1, 3)
+
+        'Set frame, frame death, and picture
+        SetFrameAndDeathPicture(8, 0)
+
+        'Change interval
+        ChangeInterval(ZOMBIE_DYING_DELAY)
 
         'Play zombie death sound
         _audcZombieDeathSound(rndNumber.Next(0, 2)).PlaySound(gintSoundVolume)
 
     End Sub
 
-    Private Sub SyncToNewFrame(intFrameToBe As Integer)
+    Private Sub ChangeInterval(intFrameDelay As Integer)
 
         'Set
-        blnAvoidTimer = False
-
-        'Wait
-        While thrAnimating.IsAlive
-        End While
-
-        'Set
-        blnAvoidTimer = True
-
-        'Disable timer
         tmrAnimation.Enabled = False
 
         'Set
-        intFrame = intFrameToBe
+        tmrAnimation.Interval = CDbl(intFrameDelay)
 
-        'Reset
-        blnAvoidTimer = False
+        'Set
+        tmrAnimation.Enabled = True
 
     End Sub
 
@@ -408,11 +384,11 @@ Public Class clsZombie
         'Set
         blnIsPinning = True
 
-        'Sync to the new frame
-        SyncToNewFrame(13)
+        'Set frame and picture
+        SetFrameAndPicture(14, gabtmZombiePinMemories(0), gabtmZombiePinRedMemories(0), gabtmZombiePinBlueMemories(0))
 
-        'Restart thread
-        RestartAnimation(ZOMBIE_PINNING_DELAY)
+        'Change interval
+        ChangeInterval(ZOMBIE_PINNING_DELAY)
 
     End Sub
 

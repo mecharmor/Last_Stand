@@ -36,6 +36,11 @@ Public Class clsCharacter
     Private _blnImitation As Boolean = False 'For multiplayer, ghost like properties
     Private _blnSpawned As Boolean = False
 
+    'Change frame after
+    Private blnChangeFrame As Boolean = False
+    Private intChangeFrame As Integer = 0
+    Private dblChangeInterval As Double = 0
+
     'Sounds
     Private _udcGunShotSound As clsSound
     Private _udcReloadingSound As clsSound
@@ -170,17 +175,6 @@ Public Class clsCharacter
 
     End Sub
 
-    Private Sub RestartAnimation(intAnimatingDelay As Integer)
-
-        'Set timer delay
-        tmrAnimation.Interval = CDbl(intAnimatingDelay)
-
-        'Start the animating thread
-        thrAnimating = New System.Threading.Thread(New System.Threading.ThreadStart(AddressOf Animating))
-        thrAnimating.Start()
-
-    End Sub
-
     Public Property Spawned() As Boolean
 
         'Return
@@ -250,18 +244,11 @@ Public Class clsCharacter
                                                        gabtmCharacterStandBlueMemories(1))
 
             Case 2 'Standing, delay here is CHARACTER_STAND_DELAY
-                'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
-                                                       gabtmCharacterStandBlueMemories(0))
-                'Default
-                pntCharacter.X = intSpotX
+                'Stand
+                StandSub() 'This must be here, because the frame could be cycled to view standing
 
             Case 3 'Shooting, delay here is CHARACTER_SHOOT_DELAY
-                'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gabtmCharacterShootMemories(0), gabtmCharacterShootRedMemories(0),
-                                                       gabtmCharacterShootBlueMemories(0))
-                'Default
-                pntCharacter.X = intSpotX
+                'Not used here
 
             Case 4 'Shooting, delay here is CHARACTER_SHOOT_DELAY
                 'Set frame, status mode processing, and picture
@@ -278,11 +265,7 @@ Public Class clsCharacter
                 pntCharacter.X = intSpotX
 
             Case 6 'Reloading, delay here is CHARACTER_RELOAD_DELAY
-                'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gabtmCharacterReloadMemories(0), gabtmCharacterReloadRedMemories(0),
-                                                       gabtmCharacterReloadBlueMemories(0))
-                'Default
-                pntCharacter.X = intSpotX
+                'Not used here
 
             Case 7 To 26 'Reloading, delay here is CHARACTER_RELOAD_DELAY
                 'Set frame
@@ -308,15 +291,8 @@ Public Class clsCharacter
                 'Reset key press event bullets
                 gintBullets = 0
 
-            Case 28
-                'Set frame, status mode processing, and picture
-                SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gabtmCharacterRunningMemories(0))
-                'Move point
-                pntCharacter.X = -CHARACTER_RESET_POINT
-                'Move game background
-                gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED
-                'Move zombies
-                gMoveZombiesWhileRunning(gaudcZombies)
+            Case 28 'Run, delay here is CHARACTER_RUN_DELAY
+                'Not used here
 
             Case 29 To 44 'Running, sleep here is CHARACTER_RUN_DELAY
                 'Set frame
@@ -372,6 +348,17 @@ Public Class clsCharacter
 
     End Sub
 
+    Private Sub StandSub()
+
+        'Set frame, status mode processing, and picture
+        SetFrameStatusModeProcessingAndPicture(1, eintStatusMode.Stand, gabtmCharacterStandMemories(0), gabtmCharacterStandRedMemories(0),
+                                               gabtmCharacterStandBlueMemories(0))
+
+        'Default
+        pntCharacter.X = intSpotX
+
+    End Sub
+
     Public Sub Shoot()
 
         'Check if not imitation
@@ -387,50 +374,38 @@ Public Class clsCharacter
             End If
         End If
 
-        'Sync to the new frame
-        SyncToNewFrame(3, eintStatusMode.Shoot)
+        'Set frame, status mode processing, and picture
+        SetFrameStatusModeProcessingAndPicture(4, eintStatusMode.Shoot, gabtmCharacterShootMemories(0), gabtmCharacterShootRedMemories(0),
+                                               gabtmCharacterShootBlueMemories(0))
 
-        'Restart thread
-        RestartAnimation(CHARACTER_SHOOT_DELAY)
+        'Default
+        pntCharacter.X = intSpotX
+
+        'Change status and interval
+        ChangeStatusAndInterval(CHARACTER_SHOOT_DELAY)
 
         'Play shooting sound
         _udcGunShotSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
 
     End Sub
 
-    Private Sub SyncToNewFrame(intFrameToBe As Integer, intStatusModeProcessingToBe As eintStatusMode)
-
-        'Set
-        blnAvoidTimer = False
-
-        'Wait
-        While thrAnimating.IsAlive
-        End While
-
-        'Set
-        blnAvoidTimer = True
-
-        'Disable timer
-        tmrAnimation.Enabled = False
+    Private Sub ChangeStatusAndInterval(intFrameDelay As Integer)
 
         'Set to default
         intStatusModeStartToDo = eintStatusMode.Stand
 
-        'Set enumeration
-        intStatusModeProcessing = intStatusModeProcessingToBe
+        'Set
+        tmrAnimation.Enabled = False
 
         'Set
-        intFrame = intFrameToBe
+        tmrAnimation.Interval = CDbl(intFrameDelay)
 
-        'Reset
-        blnAvoidTimer = False
+        'Set
+        tmrAnimation.Enabled = True
 
     End Sub
 
     Public Sub Reload()
-
-        'Sync to the new frame
-        SyncToNewFrame(6, eintStatusMode.Reload)
 
         'Send data
         If blnSendData Then
@@ -443,8 +418,15 @@ Public Class clsCharacter
         'Increase
         intReloadTimes += 1
 
-        'Restart thread
-        RestartAnimation(CHARACTER_RELOAD_DELAY)
+        'Set frame, status mode processing, and picture
+        SetFrameStatusModeProcessingAndPicture(7, eintStatusMode.Reload, gabtmCharacterReloadMemories(0), gabtmCharacterReloadRedMemories(0),
+                                               gabtmCharacterReloadBlueMemories(0))
+
+        'Default
+        pntCharacter.X = intSpotX
+
+        'Change status and interval
+        ChangeStatusAndInterval(CHARACTER_RELOAD_DELAY)
 
         'Play reloading sound
         _udcReloadingSound.PlaySound(gintSoundVolume) 'Sound must be after thread is started, order of operations creates smooth non glitch gameplay
@@ -453,21 +435,30 @@ Public Class clsCharacter
 
     Public Sub Stand()
 
-        'Sync to the new frame
-        SyncToNewFrame(2, eintStatusMode.Stand)
+        'Stand
+        StandSub()
 
-        'Restart thread
-        RestartAnimation(CHARACTER_STAND_DELAY)
+        'Change status and interval
+        ChangeStatusAndInterval(CHARACTER_STAND_DELAY)
 
     End Sub
 
     Public Sub Run()
 
-        'Sync to the new frame
-        SyncToNewFrame(28, eintStatusMode.Run)
+        'Set frame, status mode processing, and picture
+        SetFrameStatusModeProcessingAndPicture(29, eintStatusMode.Run, gabtmCharacterRunningMemories(0))
 
-        'Restart thread
-        RestartAnimation(CHARACTER_RUN_DELAY)
+        'Move point
+        pntCharacter.X = -CHARACTER_RESET_POINT
+
+        'Move game background
+        gpntGameBackground.X -= gCHARACTER_MOVEMENT_SPEED
+
+        'Move zombies
+        gMoveZombiesWhileRunning(gaudcZombies)
+
+        'Change status and interval
+        ChangeStatusAndInterval(CHARACTER_RUN_DELAY)
 
     End Sub
 
