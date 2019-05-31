@@ -8,6 +8,8 @@ Vb.Net Version: 14.0
 - Navigate to the extracted file
 - Navigate to the following path: - Last Stand 1.75\Last Stand\bin\Debug\LastStand.exe
   - Double Click LastStand.exe
+# Sample Run:
+![daug_demo](https://github.com/mecharmor/Last_Stand/blob/master/samples/Last%20Stand%20-%20sample.gif)
 # To Modify Source Code
 - Navigate to the directory: Last Stand 1.75\Last Stand.sln
   - Double click and visual studio will be launched
